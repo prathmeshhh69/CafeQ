@@ -43,4 +43,65 @@ async function registerUser(req,res){
    
 }
 
-module.exports={registerUser}
+async function loginUser(req,res){
+    const {email,phone,password}=req.body;
+
+    const user=await userModel.findOne({
+        $or:[
+            {phone},
+            {email}
+        ]
+    })
+
+    if(!user){
+        return res.status(400).json({
+            message:"User does not exist"
+        })
+    }
+    const isPasswordValid=await bcrypt.compare(password,user.password)
+    if(!isPasswordValid){
+        return res.status(400).json({
+            message:"Invalid Password"
+        })
+    }
+
+    const token=jwt.sign({
+        id:user._id,
+        role:user.role
+    },process.env.JWT_SECRET)
+
+    res.cookie('token',token)
+
+    res.status(200).json({
+        message:"User logged in successfully",
+        user:{
+            id:user._id,
+            name:user.name,
+            email:user.email,
+            phone:user.phone,
+            role:user.role
+        }
+    })
+}
+
+async function logoutUser(req,res){
+    res.clearCookie('token')
+    res.status(200).json({
+        message:"User logged out successfully"
+    })
+}
+
+async function getMe(req,res){
+        return res.status(200).json({
+        message: 'User fetched successfully',
+        user: {
+            id: req.user._id,
+            name: req.user.name,
+            email: req.user.email,
+            phone: req.user.phone,
+            role: req.user.role,
+            isVerified: req.user.isVerified
+        }
+    });
+}
+module.exports={registerUser,loginUser,logoutUser,getMe}
