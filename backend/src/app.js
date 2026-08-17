@@ -12,5 +12,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/menu',menuRoutes);
 app.use('/api/cart',cartRoutes);
 app.use('/api/timeslot',timeSlotRoutes)
+app.use('/api/time-slots',timeSlotRoutes)
 
 module.exports=app;
