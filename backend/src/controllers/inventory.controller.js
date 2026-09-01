@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 const inventoryModel = require('../models/inventory.model');
 const menuModel = require('../models/menu.model');
-
 async function createInventory(req, res) {
+    
     try {
         const { menuItem, quantity, minimumStock } = req.body;
 

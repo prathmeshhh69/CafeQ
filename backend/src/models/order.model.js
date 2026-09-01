@@ -19,7 +19,16 @@ const orderItemSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 1
-  }
+  },
+  paymentId: {
+    type: String,
+    default: null
+},
+
+paymentOrderId: {
+    type: String,
+    default: null
+}
 }, {
   _id: false
 });

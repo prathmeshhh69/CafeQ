@@ -5,6 +5,7 @@ const cartRoutes=require('./routes/cart.routes')
 const timeSlotRoutes=require('./routes/timeSlot.routes')
 const orderRoutes=require('./routes/order.routes')
 const inventoryRoutes=require('./routes/inventory.routes')
+const paymentRoutes=require('./routes/payment.routes')
 const cookieParser=require('cookie-parser')
 const app=express();
 app.use(express.json());
@@ -17,5 +18,6 @@ app.use('/api/timeslot',timeSlotRoutes)
 app.use('/api/time-slots',timeSlotRoutes)
 app.use('/api/orders',orderRoutes)
 app.use('/api/inventory',inventoryRoutes)
+app.use('/api/payment',paymentRoutes)
 
 module.exports=app;
