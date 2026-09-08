@@ -100,6 +100,13 @@ async function verifyPayment(req,res){
                 message: "You cannot verify payment for another user's order"
             });
         }
+
+        // Prevent payment verification for an already paid order
+        if (order.paymentStatus === "PAID") {
+            return res.status(400).json({
+                message: "Order is already paid"
+            });
+        }
         // 4. Verify the Razorpay signature
         const generatedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
             .update(razorpay_order_id + "|" + razorpay_payment_id)

@@ -342,10 +342,123 @@ async function cancelOrder(req, res) {
     }
 }
 
+async function getAllOrders(req, res) {
+    try {
+        const orders = await orderModel.find()
+            .populate('user', 'name email')
+            .populate('timeSlot')
+            .sort({ createdAt: -1 });
+            
+        return res.status(200).json({
+            message: "All orders fetched successfully",
+            orders
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+}
+
+async function getOrderByIdAdmin(req, res) {
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                message: "Invalid order ID"
+            });
+        }
+
+        const order = await orderModel.findById(id)
+            .populate('user', 'name email phone')
+            .populate('items.menuItem', 'name category image')
+            .populate('timeSlot');
+
+        if (!order) {
+            return res.status(404).json({
+                message: "Order not found"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Order fetched successfully",
+            order
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+}
+
+async function updateOrderStatus(req, res) {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                message: "Invalid order ID"
+            });
+        }
+
+        if (!status) {
+            return res.status(400).json({
+                message: "Status is required"
+            });
+        }
+
+        const order = await orderModel.findById(id);
+        if (!order) {
+            return res.status(404).json({
+                message: "Order not found"
+            });
+        }
+
+        const validTransitions = {
+            'PENDING': ['CONFIRMED', 'CANCELLED'],
+            'CONFIRMED': ['PREPARING', 'CANCELLED'],
+            'PREPARING': ['READY', 'CANCELLED'],
+            'READY': ['COMPLETED', 'CANCELLED'],
+            'COMPLETED': [],
+            'CANCELLED': []
+        };
+
+        if (order.orderStatus === status) {
+            return res.status(400).json({
+                message: `Order is already ${status}`
+            });
+        }
+
+        if (!validTransitions[order.orderStatus].includes(status)) {
+            return res.status(400).json({
+                message: `Invalid status transition from ${order.orderStatus} to ${status}`
+            });
+        }
+
+        order.orderStatus = status;
+        await order.save();
+
+        return res.status(200).json({
+            message: "Order status updated successfully",
+            order
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+}
+
 module.exports = {
     createOrder,
     getOrders,
     getOrderById,
-    cancelOrder
+    cancelOrder,
+    getAllOrders,
+    getOrderByIdAdmin,
+    updateOrderStatus
 };
-

@@ -19,16 +19,7 @@ const orderItemSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 1
-  },
-  paymentId: {
-    type: String,
-    default: null
-},
-
-paymentOrderId: {
-    type: String,
-    default: null
-}
+  }
 }, {
   _id: false
 });
@@ -55,7 +46,7 @@ const orderSchema = new mongoose.Schema({
   },
   orderStatus: {
     type: String,
-    enum: ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'],
+    enum: ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'],
     default: 'PENDING',
     required: true
   },
@@ -64,6 +55,14 @@ const orderSchema = new mongoose.Schema({
     enum: ['PENDING', 'PAID', 'FAILED'],
     default: 'PENDING',
     required: true
+  },
+  paymentId: {
+    type: String,
+    default: null
+  },
+  paymentOrderId: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 

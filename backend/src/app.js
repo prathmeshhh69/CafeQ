@@ -6,11 +6,13 @@ const timeSlotRoutes=require('./routes/timeSlot.routes')
 const orderRoutes=require('./routes/order.routes')
 const inventoryRoutes=require('./routes/inventory.routes')
 const paymentRoutes=require('./routes/payment.routes')
+const reviewRoutes=require('./routes/review.routes')
 const cookieParser=require('cookie-parser')
+const cors=require('cors');
 const app=express();
 app.use(express.json());
 app.use(cookieParser());
-
+app.use(cors());
 app.use('/api/auth', authRoutes);
 app.use('/api/menu',menuRoutes);
 app.use('/api/cart',cartRoutes);
@@ -19,5 +21,6 @@ app.use('/api/time-slots',timeSlotRoutes)
 app.use('/api/orders',orderRoutes)
 app.use('/api/inventory',inventoryRoutes)
 app.use('/api/payment',paymentRoutes)
+app.use('/api/reviews', reviewRoutes)
 
 module.exports=app;

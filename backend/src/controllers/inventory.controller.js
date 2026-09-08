@@ -143,8 +143,102 @@ async function updateInventory(req, res) {
     }
 }
 
+async function getAllInventory(req, res) {
+    try {
+        const inventories = await inventoryModel.find()
+            .populate('menuItem')
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            message: "Inventory fetched successfully",
+            inventories
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+}
+
+async function addStock(req, res) {
+    try {
+        const { menuItem, quantity } = req.body;
+        if (!menuItem || !mongoose.Types.ObjectId.isValid(menuItem)) {
+            return res.status(400).json({ message: "Invalid menu item ID" });
+        }
+        if (quantity === undefined || typeof quantity !== 'number' || quantity < 0) {
+            return res.status(400).json({ message: "Quantity must be a non-negative number" });
+        }
+        
+        const inventory = await inventoryModel.findOne({ menuItem });
+        if (!inventory) {
+            return res.status(404).json({ message: "Inventory record not found" });
+        }
+        
+        inventory.quantity += quantity;
+        await inventory.save();
+        
+        return res.status(200).json({
+            message: "Stock added successfully",
+            inventory
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+async function updateStock(req, res) {
+    try {
+        const { menuItem, quantity } = req.body;
+        if (!menuItem || !mongoose.Types.ObjectId.isValid(menuItem)) {
+            return res.status(400).json({ message: "Invalid menu item ID" });
+        }
+        if (quantity === undefined || typeof quantity !== 'number' || quantity < 0) {
+            return res.status(400).json({ message: "Quantity must be a non-negative number" });
+        }
+        
+        const inventory = await inventoryModel.findOne({ menuItem });
+        if (!inventory) {
+            return res.status(404).json({ message: "Inventory record not found" });
+        }
+        
+        inventory.quantity = quantity;
+        await inventory.save();
+        
+        return res.status(200).json({
+            message: "Stock updated successfully",
+            inventory
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+async function getLowStockItems(req, res) {
+    try {
+        const inventories = await inventoryModel.find({
+            $expr: { $lt: ["$quantity", "$minimumStock"] }
+        }).populate('menuItem');
+        
+        return res.status(200).json({
+            message: "Low stock items fetched successfully",
+            inventories
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
 module.exports = {
     createInventory,
     getInventory,
-    updateInventory
+    updateInventory,
+    getAllInventory,
+    addStock,
+    updateStock,
+    getLowStockItems
 };
