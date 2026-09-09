@@ -7,6 +7,7 @@ const orderRoutes=require('./routes/order.routes')
 const inventoryRoutes=require('./routes/inventory.routes')
 const paymentRoutes=require('./routes/payment.routes')
 const reviewRoutes=require('./routes/review.routes')
+const recommendationRoutes=require('./routes/recommendation.routes')
 const cookieParser=require('cookie-parser')
 const cors=require('cors');
 const app=express();
@@ -22,5 +23,6 @@ app.use('/api/orders',orderRoutes)
 app.use('/api/inventory',inventoryRoutes)
 app.use('/api/payment',paymentRoutes)
 app.use('/api/reviews', reviewRoutes)
+app.use('/api/recommendations', recommendationRoutes)
 
 module.exports=app;
