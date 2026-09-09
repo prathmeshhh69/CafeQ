@@ -6,5 +6,9 @@ const router = express.Router();
 
 router.post('/', authenticate, reviewController.createReview);
 router.get('/:menuItemId', reviewController.getReviewsByMenuItem);
+router.get('/average/:menuItemId', reviewController.getAverageRating);
+router.put('/:reviewId', authenticate, reviewController.updateReview);
+router.delete('/:reviewId', authenticate, reviewController.deleteReview);
+
 
 module.exports = router;
