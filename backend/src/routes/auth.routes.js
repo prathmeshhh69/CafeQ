@@ -8,11 +8,4 @@ router.post('/register',authController.registerUser)
 router.post('/login',authController.loginUser)
 router.post('/logout',authController.logoutUser)
 router.get('/me',authMiddleware.authenticate,authController.getMe)
-router.get('/admin',authMiddleware.authenticate,authMiddleware.authorize,async(req,res)=>{
-    return res.status(200).json({
-        message:'Welcome Admin nigga'
-    })
-})
-
-
 module.exports=router

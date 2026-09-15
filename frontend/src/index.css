@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Inter:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --color-cream: #fff8e8;
+  --color-surface: #fffdf5;
+  --color-lime: #e5ee58;
+  --color-lime-deep: #d6df3f;
+  --color-ink: #181817;
+  --color-orange: #ffaa32;
+  --color-red: #ff625c;
+  --color-green: #a8b968;
+  --color-muted: #6f6a5f;
+  --color-line: #e7ddc8;
+
+  --font-hand: 'Kalam', cursive;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  --background: #fff8e8;
+  --foreground: #181817;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-hand {
+  font-family: var(--font-hand);
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover {
+  scrollbar-color: #d8cfba transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*:hover::-webkit-scrollbar-thumb {
+  background: #d8cfba;
+  background-clip: content-box;
+}
+
+::selection {
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fadeUp 0.35s ease both; }
+
+@keyframes pop {
+  0% { transform: scale(0.9); opacity: 0; }
+  60% { transform: scale(1.03); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop { animation: pop 0.3s ease both; }
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #efe7d3 25%, #f6f0e0 50%, #efe7d3 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+@keyframes steam {
+  0% { opacity: 0; transform: translateY(2px) scaleY(0.8); }
+  50% { opacity: 0.7; }
+  100% { opacity: 0; transform: translateY(-8px) scaleY(1.2); }
+}
+.animate-steam { animation: steam 2.2s infinite ease-in-out; }

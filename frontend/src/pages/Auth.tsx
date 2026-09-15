@@ -1,0 +1,142 @@
+import { useState } from "react";
+import { Mail, Lock, Eye, EyeOff, User, Phone } from "lucide-react";
+import { Button, Input } from "../components/ui";
+import { Logo } from "../components/nav";
+import { CupDoodle, Star, Sparkle, Heart, Arrow, PlateDoodle } from "../components/Doodles";
+import { useStore } from "../lib/store";
+
+function PasswordInput({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <label className="block">
+      {label && <span className="mb-1.5 block text-sm font-medium">{label}</span>}
+      <span className="relative flex items-center">
+        <Lock className="pointer-events-none absolute left-3.5 h-4 w-4 text-muted" />
+        <input
+          {...props} type={show ? "text" : "password"}
+          className="w-full rounded-xl border border-line bg-surface px-4 py-2.5 pl-10 pr-11 text-sm placeholder:text-muted/70 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-lime/60"
+        />
+        <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-3 text-muted hover:text-ink" aria-label={show ? "Hide password" : "Show password"}>
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </span>
+    </label>
+  );
+}
+
+function BrandPanel({ headline }: { headline: string }) {
+  return (
+    <div className="relative hidden overflow-hidden bg-ink text-cream lg:flex lg:flex-col lg:justify-between lg:p-12">
+      <div className="pointer-events-none absolute inset-0 opacity-90">
+        <Star className="absolute left-[12%] top-[18%] text-[26px] text-lime" />
+        <Sparkle className="absolute right-[18%] top-[12%] text-[30px] text-orange" />
+        <Heart className="absolute right-[24%] top-[42%] text-[22px] text-red" />
+        <Star className="absolute left-[20%] bottom-[26%] text-[18px] text-orange rotate-12" />
+      </div>
+      <Logo />
+      <div className="relative z-10">
+        <div className="mb-6 grid h-40 w-40 place-items-center rounded-full bg-lime/10 text-lime">
+          <CupDoodle className="text-[110px]" />
+        </div>
+        <h2 className="font-hand text-5xl leading-[1.05]">{headline}</h2>
+        <p className="mt-4 max-w-xs text-cream/70">Fresh favourites from your neighbourhood café — pre-ordered and ready right when you are.</p>
+      </div>
+      <div className="relative z-10 flex items-center gap-3 text-cream/60">
+        <PlateDoodle className="text-[44px] text-lime" />
+        <span className="font-hand text-xl">Good food, good mood.</span>
+      </div>
+    </div>
+  );
+}
+
+export function LoginPage({ go }: { go: (r: string) => void }) {
+  const { login, toast } = useStore();
+  const [loading, setLoading] = useState(false);
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    const fields = new FormData(e.currentTarget);
+    const identifier = String(fields.get("identifier") || "").trim();
+    const password = String(fields.get("password") || "");
+    try {
+      const user = await login(identifier.includes("@") ? { email: identifier, password } : { phone: identifier, password });
+      toast("Welcome back to CafeQ!");
+      go(user.role === "ADMIN" ? "admin" : "menu");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Could not log in.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <BrandPanel headline={"Good food.\nBetter moods."} />
+      <div className="flex flex-col justify-center px-6 py-10 sm:px-12">
+        <div className="mx-auto w-full max-w-sm">
+          <div className="lg:hidden"><Logo /></div>
+          <div className="mt-8 flex items-center gap-2 lg:mt-0">
+            <h1 className="font-hand text-4xl">Welcome back!</h1>
+            <Arrow className="text-2xl text-orange" />
+          </div>
+          <p className="mt-1 text-muted">Log in to pick up where your cravings left off.</p>
+          <form onSubmit={submit} className="mt-8 space-y-4">
+            <Input name="identifier" label="Email or Phone Number" icon={<Mail className="h-4 w-4" />} placeholder="you@example.com" required />
+            <PasswordInput name="password" label="Password" placeholder="••••••••" required />
+            <Button type="submit" size="lg" block loading={loading}>Log In</Button>
+          </form>
+          <p className="mt-6 text-center text-sm text-muted">
+            New here?{" "}
+            <button onClick={() => go("register")} className="font-semibold text-ink underline decoration-lime-deep decoration-2 underline-offset-2 hover:text-orange">Create an account</button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function RegisterPage({ go }: { go: (r: string) => void }) {
+  const { register, toast } = useStore();
+  const [loading, setLoading] = useState(false);
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    const fields = new FormData(e.currentTarget);
+    try {
+      await register({
+        name: String(fields.get("name") || "").trim(),
+        email: String(fields.get("email") || "").trim(),
+        phone: String(fields.get("phone") || "").trim(),
+        password: String(fields.get("password") || ""),
+      });
+      toast("Account created — welcome to CafeQ!");
+      go("menu");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Could not create your account.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <BrandPanel headline={"Join the\nCafeQ family!"} />
+      <div className="flex flex-col justify-center px-6 py-10 sm:px-12">
+        <div className="mx-auto w-full max-w-sm">
+          <div className="lg:hidden"><Logo /></div>
+          <h1 className="mt-8 font-hand text-4xl lg:mt-0">Join the CafeQ family!</h1>
+          <p className="mt-1 text-muted">Good food tastes better together.</p>
+          <form onSubmit={submit} className="mt-8 space-y-4">
+            <Input name="name" label="Full Name" icon={<User className="h-4 w-4" />} placeholder="Ojas Rane" required />
+            <Input name="email" label="Email Address" icon={<Mail className="h-4 w-4" />} type="email" placeholder="you@example.com" required />
+            <Input name="phone" label="Phone Number" icon={<Phone className="h-4 w-4" />} type="tel" placeholder="+91 98765 43210" required />
+            <PasswordInput name="password" label="Password" placeholder="Create a password" required />
+            <Button type="submit" size="lg" block loading={loading}>Create Account</Button>
+          </form>
+          <p className="mt-6 text-center text-sm text-muted">
+            Already have an account?{" "}
+            <button onClick={() => go("login")} className="font-semibold text-ink underline decoration-lime-deep decoration-2 underline-offset-2 hover:text-orange">Log in</button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
