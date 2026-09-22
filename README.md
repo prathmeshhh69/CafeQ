@@ -23,4 +23,7 @@ npm run seed:menu -- --reset
 
 The reset command deliberately does not delete historical orders. Their embedded item names and prices remain available as the order record.
 
+To apply images listed as `Item Name: URL` in the root `url.txt` to existing menu items, run `npm run sync:menu-images` from `backend/`. The command reports names that are not currently in the database. Seeding also applies listed images to matching catalogue items and preserves existing images for unlisted items.
+The landing-page slideshow reads the same `url.txt` when the frontend builds and changes images every 3.5 seconds, so include that file when building or deploying the frontend.
+
 The backend currently returns only a time slot ID in customer order history, so older orders may show unavailable pickup details. The time slot listing route returns active slots only, so deactivated slots can be reactivated in the current admin session but disappear from that list after a refresh. The menu response has no popularity flag; the featured row shows available items as “Today's Picks.”

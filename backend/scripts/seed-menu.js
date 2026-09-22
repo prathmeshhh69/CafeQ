@@ -6,6 +6,7 @@ const Menu = require("../src/models/menu.model");
 const Inventory = require("../src/models/inventory.model");
 const Cart = require("../src/models/cart.model");
 const Review = require("../src/models/review.model");
+const { loadMenuImages } = require("./menu-images");
 
 const menu = [
   ["Shawarma - Non-Veg", "Regular chicken Shawarma", 100],
@@ -60,14 +61,17 @@ const menu = [
 const reset = process.argv.includes("--reset");
 
 async function seed() {
+  const images = loadMenuImages({ required: false });
   await connectDB();
   if (mongoose.connection.readyState !== 1) throw new Error("MongoDB connection failed. Check MONGO_URI.");
 
   const seeded = [];
   for (const [category, name, price, description = ""] of menu) {
+    const values = { category, name, price, description, isAvailable: true };
+    if (images.has(name)) values.image = images.get(name);
     const item = await Menu.findOneAndUpdate(
       { category, name },
-      { $set: { category, name, price, description, image: "", isAvailable: true } },
+      { $set: values, ...(images.has(name) ? {} : { $setOnInsert: { image: "" } }) },
       { new: true, upsert: true, setDefaultsOnInsert: true },
     );
     seeded.push(item);

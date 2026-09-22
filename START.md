@@ -101,6 +101,8 @@ npm run seed:menu -- --reset
 
 The reset command keeps historical orders but removes stale menu items, their inventory records, cart references, and reviews.
 
+To update images on existing menu items from the root `url.txt` file, run `npm run sync:menu-images` in `backend/`. Each line should be `Item Name: URL`. The script also accepts image data URIs, reports names not found in the database, and leaves unlisted items' images unchanged. Future menu seed runs use the same file for matching catalogue items.
+
 ## 4. Start the backend
 
 Open a terminal at the project root.

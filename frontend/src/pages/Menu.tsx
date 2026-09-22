@@ -8,6 +8,7 @@ import { money, type Category, type MenuItem, type Review } from "../lib/data";
 import { asMenuItem, menuApi } from "../lib/menu-api";
 import { asReview, reviewsApi } from "../lib/reviews-api";
 import { useStore } from "../lib/store";
+import { landingImages } from "../lib/landing-images";
 
 const PAGE_SIZE = 8;
 
@@ -25,6 +26,15 @@ export function MenuPage({ openItem }: { openItem: MenuItem | null | undefined }
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   const [detail, setDetail] = useState<MenuItem | null>(openItem ?? null);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    if (landingImages.length < 2) return;
+    const timeout = window.setTimeout(() => {
+      setActiveSlide((current) => (current + 1) % landingImages.length);
+    }, 3500);
+    return () => window.clearTimeout(timeout);
+  }, [activeSlide]);
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedQuery(query.trim()), 250);
@@ -113,12 +123,43 @@ export function MenuPage({ openItem }: { openItem: MenuItem | null | undefined }
               <Heart className="absolute -right-1 bottom-16 text-[26px] text-red" />
               <Arrow className="absolute -bottom-2 left-10 text-[40px] text-ink" />
             </div>
-            <div className="relative mx-auto aspect-square max-w-md overflow-hidden rounded-[2.5rem] border-2 border-ink bg-cream shadow-[8px_8px_0_#181817]">
-              <ImageWithFallback
-                category="Coffee"
-                alt="A warm cappuccino and pastries on a café table"
-                className="h-full w-full object-cover"
-              />
+            <div
+              role="region"
+              aria-roledescription="carousel"
+              aria-label="Food highlights"
+              className="relative mx-auto aspect-square max-w-md overflow-hidden rounded-[2.5rem] border-2 border-ink bg-cream shadow-[8px_8px_0_#181817]"
+            >
+              {landingImages.map((slide, index) => (
+                <div
+                  key={slide.name}
+                  aria-hidden={index !== activeSlide}
+                  className={`absolute inset-0 transition-opacity duration-700 motion-reduce:transition-none ${index === activeSlide ? "opacity-100" : "opacity-0"}`}
+                >
+                  <ImageWithFallback
+                    src={slide.src}
+                    alt={index === activeSlide ? slide.name : ""}
+                    category={slide.name.includes("Lassi") ? "Lassi" : undefined}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ))}
+              {landingImages.length > 0 && (
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-ink/75 via-ink/25 to-transparent px-6 pb-6 pt-20 text-white">
+                  <p className="text-xl font-bold drop-shadow-sm sm:text-2xl">{landingImages[activeSlide].name}</p>
+                  <div className="flex gap-1.5" aria-label="Choose a food image">
+                    {landingImages.map((slide, index) => (
+                      <button
+                        key={slide.name}
+                        type="button"
+                        aria-label={`Show ${slide.name}`}
+                        aria-pressed={index === activeSlide}
+                        onClick={() => setActiveSlide(index)}
+                        className={`h-2.5 rounded-full transition-all ${index === activeSlide ? "w-6 bg-white" : "w-2.5 bg-white/60 hover:bg-white"}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="absolute -bottom-4 -left-2 flex items-center gap-2 rounded-2xl border border-line bg-surface px-3 py-2 shadow-lg">
               <CupDoodle className="text-[28px]" />
