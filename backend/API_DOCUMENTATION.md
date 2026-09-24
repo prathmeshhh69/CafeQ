@@ -19,21 +19,39 @@ Authentication is handled via JWT. The token is expected either in the `token` c
   "phone": "1234567890"         // Required
 }
 ```
-*Note: Public registrations automatically become `CUSTOMER`. If `role` is passed in the payload, the backend explicitly ignores it to prevent privilege escalation.*
+*Note: Public registrations automatically become `CUSTOMER`. If `role` is passed in the payload, the backend ignores it. Registration sends an email OTP and does not authenticate the user until verification.*
 
 **Success Response:** `201 Created`
 ```json
 {
-  "message": "User registered successfully",
-  "user": {
-    "id": "64c8f...",
-    "name": "John Doe",
-    "email": "user@example.com",
-    "phone": "1234567890",
-    "role": "CUSTOMER"
-  }
+  "message": "Verification code sent to your email. Please verify your email to complete registration.",
+  "requiresEmailVerification": true,
+  "email": "user@example.com"
 }
 ```
+
+### Verify Email OTP
+**Method and URL:** `POST /api/auth/verify-otp`
+**Authentication:** Public (sets `token` cookie on success)
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "otp": "123456"
+}
+```
+The OTP expires after 10 minutes. A maximum of 5 failed attempts is allowed.
+
+### Resend Email OTP
+**Method and URL:** `POST /api/auth/resend-otp`
+**Authentication:** Public
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+Resend requests have a 60-second cooldown.
 
 ### Login
 **Method and URL:** `POST /api/auth/login`
@@ -65,6 +83,7 @@ Authentication is handled via JWT. The token is expected either in the `token` c
   }
 }
 ```
+Unverified users receive `403 Forbidden` with `Please verify your email before logging in.`
 
 ### Logout
 **Method and URL:** `POST /api/auth/logout`

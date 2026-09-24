@@ -13,7 +13,11 @@ interface AuthResponse { message: string; user: AuthUser; }
 
 export const authApi = {
   register: (details: { name: string; email: string; phone: string; password: string }) =>
-    apiRequest<AuthResponse>("/api/auth/register", { method: "POST", body: details }),
+    apiRequest<{ message: string; requiresEmailVerification: boolean; email: string }>("/api/auth/register", { method: "POST", body: details }),
+  verifyOtp: (details: { email: string; otp: string }) =>
+    apiRequest<AuthResponse>("/api/auth/verify-otp", { method: "POST", body: details }),
+  resendOtp: (details: { email: string }) =>
+    apiRequest<{ message: string }>("/api/auth/resend-otp", { method: "POST", body: details }),
   login: (credentials: { email?: string; phone?: string; password: string }) =>
     apiRequest<AuthResponse>("/api/auth/login", { method: "POST", body: credentials }),
   logout: () => apiRequest<{ message: string }>("/api/auth/logout", { method: "POST" }),
