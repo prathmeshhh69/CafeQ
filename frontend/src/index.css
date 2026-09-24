@@ -2,24 +2,24 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-cream: #fff8e8;
-  --color-surface: #fffdf5;
-  --color-lime: #e5ee58;
-  --color-lime-deep: #d6df3f;
-  --color-ink: #181817;
-  --color-orange: #ffaa32;
-  --color-red: #ff625c;
-  --color-green: #a8b968;
-  --color-muted: #6f6a5f;
-  --color-line: #e7ddc8;
+  --color-cream: #fff2e9;
+  --color-surface: #fffaf6;
+  --color-lime: #ffa040;
+  --color-lime-deep: #ec702a;
+  --color-ink: #19151b;
+  --color-orange: #d9541e;
+  --color-red: #cf2150;
+  --color-green: #9f4028;
+  --color-muted: #6d5556;
+  --color-line: #e9d0c8;
 
   --font-hand: 'Kalam', cursive;
   --font-sans: 'Inter', system-ui, sans-serif;
 }
 
 :root {
-  --background: #fff8e8;
-  --foreground: #181817;
+  --background: #fff2e9;
+  --foreground: #19151b;
 }
 
 * {
@@ -49,7 +49,7 @@ body {
   scrollbar-color: transparent transparent;
 }
 *:hover {
-  scrollbar-color: #d8cfba transparent;
+  scrollbar-color: #d8b8ad transparent;
 }
 ::-webkit-scrollbar {
   width: 10px;
@@ -62,7 +62,7 @@ body {
   background-clip: content-box;
 }
 *:hover::-webkit-scrollbar-thumb {
-  background: #d8cfba;
+  background: #d8b8ad;
   background-clip: content-box;
 }
 
@@ -89,7 +89,7 @@ body {
   100% { background-position: 400px 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #efe7d3 25%, #f6f0e0 50%, #efe7d3 75%);
+  background: linear-gradient(90deg, #f2ddd3 25%, #fff1e9 50%, #f2ddd3 75%);
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite linear;
 }

@@ -129,8 +129,8 @@ function Dashboard() {
 
   const total = data?.summary.totalOrders ?? 0;
   const statusColors: Record<OrderStatus, string> = {
-    PENDING: "#ffaa32", CONFIRMED: "#7fa6d9", PREPARING: "#d6df3f",
-    READY: "#a8b968", COMPLETED: "#4d8b3f", CANCELLED: "#ff625c",
+    PENDING: "#ffa040", CONFIRMED: "#19151b", PREPARING: "#ec702a",
+    READY: "#d9541e", COMPLETED: "#9f4028", CANCELLED: "#cf2150",
   };
   const statusData = (FILTERS.filter((status): status is OrderStatus => status !== "ALL"))
     .map((status) => ({ s: status[0] + status.slice(1).toLowerCase(),
@@ -175,11 +175,11 @@ function Dashboard() {
           <div className="mb-4 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-green" /><h3 className="font-semibold">Revenue Over Time</h3></div>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={revenueData} margin={{ left: -12, right: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e7ddc8" vertical={false} />
-              <XAxis dataKey="d" tick={{ fontSize: 12, fill: "#6f6a5f" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#6f6a5f" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
-              <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e7ddc8", fontSize: 13 }} formatter={(v) => money(Number(v))} />
-              <Line type="monotone" dataKey="v" stroke="#181817" strokeWidth={2.5} dot={{ r: 3, fill: "#e5ee58", stroke: "#181817" }} activeDot={{ r: 5 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-line)" vertical={false} />
+              <XAxis dataKey="d" tick={{ fontSize: 12, fill: "var(--color-muted)" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: "var(--color-muted)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
+              <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--color-line)", fontSize: 13 }} formatter={(v) => money(Number(v))} />
+              <Line type="monotone" dataKey="v" stroke="var(--color-ink)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--color-lime)", stroke: "var(--color-ink)" }} activeDot={{ r: 5 }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
@@ -202,12 +202,12 @@ function Dashboard() {
         <h3 className="mb-4 font-semibold">Best Selling Items</h3>
         <ResponsiveContainer width="100%" height={240}>
           <BarChart data={bestSellers} margin={{ left: -16, right: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e7ddc8" vertical={false} />
-            <XAxis dataKey="n" tick={{ fontSize: 12, fill: "#6f6a5f" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 12, fill: "#6f6a5f" }} axisLine={false} tickLine={false} />
-            <Tooltip cursor={{ fill: "#fff8e8" }} contentStyle={{ borderRadius: 12, border: "1px solid #e7ddc8", fontSize: 13 }} formatter={(v) => `${v} sold`} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-line)" vertical={false} />
+            <XAxis dataKey="n" tick={{ fontSize: 12, fill: "var(--color-muted)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 12, fill: "var(--color-muted)" }} axisLine={false} tickLine={false} />
+            <Tooltip cursor={{ fill: "var(--color-cream)" }} contentStyle={{ borderRadius: 12, border: "1px solid var(--color-line)", fontSize: 13 }} formatter={(v) => `${v} sold`} />
             <Bar dataKey="v" radius={[8, 8, 0, 0]}>
-              {bestSellers.map((_, i) => <Cell key={i} fill={i === 0 ? "#181817" : "#e5ee58"} />)}
+              {bestSellers.map((_, i) => <Cell key={i} fill={i === 0 ? "var(--color-ink)" : "var(--color-lime)"} />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -491,7 +491,7 @@ function AdminMenu() {
                 <td className="px-4 py-2 font-medium">{money(m.price)}</td>
                 <td className="px-4 py-2">
                   <button disabled={busy} onClick={() => { void toggleAvailability(m); }}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${m.available ? "bg-green/20 text-[#3c6b34]" : "bg-red/15 text-[#b23934]"}`}>
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${m.available ? "bg-ink/10 text-ink" : "bg-red/15 text-red"}`}>
                     <span className="h-1.5 w-1.5 rounded-full bg-current" />{m.available ? "Available" : "Unavailable"}
                   </button>
                 </td>
@@ -742,7 +742,7 @@ function AdminInventory() {
 }
 
 function HealthBadge({ health }: { health: "Healthy" | "Low Stock" | "Out of Stock" }) {
-  const cls = { "Healthy": "bg-green/20 text-[#3c6b34]", "Low Stock": "bg-orange/15 text-[#a5651a]", "Out of Stock": "bg-red/15 text-[#b23934]" }[health];
+  const cls = { "Healthy": "bg-ink/10 text-ink", "Low Stock": "bg-orange/15 text-[#923916]", "Out of Stock": "bg-red/15 text-red" }[health];
   return <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${cls}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{health}</span>;
 }
 
@@ -903,7 +903,7 @@ function AdminSlots() {
             <Card key={s.id} className={`p-4 ${!s.active ? "opacity-60" : ""}`}>
               <div className="flex items-center justify-between">
                 <div><p className="font-semibold">{s.start} – {s.end}</p><p className="text-xs text-muted">{s.current} / {s.max} orders</p></div>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${s.active ? "bg-green/20 text-[#3c6b34]" : "bg-line text-muted"}`}>{s.active ? "Active" : "Inactive"}</span>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${s.active ? "bg-ink/10 text-ink" : "bg-line text-muted"}`}>{s.active ? "Active" : "Inactive"}</span>
               </div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-cream">
                 <div className={`h-full rounded-full ${pct >= 100 ? "bg-red" : pct >= 80 ? "bg-orange" : "bg-lime-deep"}`} style={{ width: `${pct}%` }} />

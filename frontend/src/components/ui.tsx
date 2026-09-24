@@ -22,10 +22,10 @@ export function Button({
     lg: "text-base px-7 py-3.5",
   }[size];
   const variants = {
-    primary: "bg-lime text-ink border border-lime-deep hover:bg-lime-deep shadow-[0_2px_0_#c3cb2f]",
+    primary: "bg-lime text-ink border border-lime-deep hover:bg-lime-deep shadow-[0_2px_0_#b74b23]",
     secondary: "bg-surface text-ink border border-line hover:bg-cream",
     ghost: "bg-transparent text-ink hover:bg-black/5",
-    danger: "bg-red text-white hover:brightness-95 shadow-[0_2px_0_#d94a45]",
+    danger: "bg-red text-white hover:brightness-95 shadow-[0_2px_0_#921737]",
     dark: "bg-ink text-cream hover:bg-black shadow-[0_2px_0_#000]",
   }[variant];
   return (
@@ -123,12 +123,12 @@ export function QuantityStepper({
 
 // ---------- Status + Payment badges ----------
 const STATUS_STYLE: Record<OrderStatus, { bg: string; text: string; label: string }> = {
-  PENDING: { bg: "bg-orange/15", text: "text-[#a5651a]", label: "Pending" },
-  CONFIRMED: { bg: "bg-[#7fa6d9]/20", text: "text-[#2f5c96]", label: "Confirmed" },
-  PREPARING: { bg: "bg-lime/40", text: "text-[#5f6a12]", label: "Preparing" },
-  READY: { bg: "bg-green/25", text: "text-[#4d5c1f]", label: "Ready" },
-  COMPLETED: { bg: "bg-[#cfe6c9]", text: "text-[#3c6b34]", label: "Completed" },
-  CANCELLED: { bg: "bg-red/15", text: "text-[#b23934]", label: "Cancelled" },
+  PENDING: { bg: "bg-orange/15", text: "text-[#923916]", label: "Pending" },
+  CONFIRMED: { bg: "bg-ink/10", text: "text-ink", label: "Confirmed" },
+  PREPARING: { bg: "bg-lime/30", text: "text-[#8a3b1b]", label: "Preparing" },
+  READY: { bg: "bg-orange/20", text: "text-[#87351a]", label: "Ready" },
+  COMPLETED: { bg: "bg-ink/10", text: "text-ink", label: "Completed" },
+  CANCELLED: { bg: "bg-red/15", text: "text-red", label: "Cancelled" },
 };
 export function StatusBadge({ status }: { status: OrderStatus }) {
   const s = STATUS_STYLE[status];
@@ -141,9 +141,9 @@ export function StatusBadge({ status }: { status: OrderStatus }) {
 }
 
 const PAY_STYLE: Record<PaymentStatus, { bg: string; text: string; label: string; icon: React.ReactNode }> = {
-  PENDING: { bg: "bg-orange/15", text: "text-[#a5651a]", label: "Payment pending", icon: <Info className="w-3 h-3" /> },
-  PAID: { bg: "bg-[#cfe6c9]", text: "text-[#3c6b34]", label: "Paid", icon: <Check className="w-3 h-3" /> },
-  FAILED: { bg: "bg-red/15", text: "text-[#b23934]", label: "Payment failed", icon: <AlertTriangle className="w-3 h-3" /> },
+  PENDING: { bg: "bg-orange/15", text: "text-[#923916]", label: "Payment pending", icon: <Info className="w-3 h-3" /> },
+  PAID: { bg: "bg-ink/10", text: "text-ink", label: "Paid", icon: <Check className="w-3 h-3" /> },
+  FAILED: { bg: "bg-red/15", text: "text-red", label: "Payment failed", icon: <AlertTriangle className="w-3 h-3" /> },
 };
 export function PaymentBadge({ status }: { status: PaymentStatus }) {
   const s = PAY_STYLE[status];

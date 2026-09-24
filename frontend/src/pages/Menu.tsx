@@ -106,7 +106,7 @@ export function MenuPage({ openItem }: { openItem: MenuItem | null | undefined }
               Hungry?<br />Let's fix that.
             </h1>
             <p className="mt-3 max-w-md text-lg text-muted">Fresh favourites, ready when you are — pre-order and skip the wait.</p>
-            <div className="mt-6 flex max-w-md items-center gap-2 rounded-2xl border border-line bg-surface p-1.5 shadow-[0_2px_0_#e7ddc8]">
+            <div className="mt-6 flex max-w-md items-center gap-2 rounded-2xl border border-line bg-surface p-1.5 shadow-[0_2px_0_#d8b8ad]">
               <Search className="ml-2 h-5 w-5 flex-none text-muted" />
               <input
                 value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }}
@@ -127,7 +127,7 @@ export function MenuPage({ openItem }: { openItem: MenuItem | null | undefined }
               role="region"
               aria-roledescription="carousel"
               aria-label="Food highlights"
-              className="relative mx-auto aspect-square max-w-md overflow-hidden rounded-[2.5rem] border-2 border-ink bg-cream shadow-[8px_8px_0_#181817]"
+              className="relative mx-auto aspect-square max-w-md overflow-hidden rounded-[2.5rem] border-2 border-ink bg-cream shadow-[8px_8px_0_#19151b]"
             >
               {landingImages.map((slide, index) => (
                 <div

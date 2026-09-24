@@ -11,7 +11,7 @@ export function ConfirmationPage({ order, go }: { order: Order; go: (r: string, 
         <Sparkle className="absolute right-8 top-0 text-[32px] text-lime-deep" />
         <Heart className="absolute left-1/2 top-6 text-[22px] text-red" />
       </div>
-      <div className="relative mx-auto grid h-28 w-28 place-items-center rounded-full bg-lime text-ink shadow-[0_6px_0_#c3cb2f] animate-pop">
+      <div className="relative mx-auto grid h-28 w-28 place-items-center rounded-full bg-lime text-ink shadow-[0_6px_0_#b74b23] animate-pop">
         <CupDoodle className="text-[72px]" />
       </div>
       <h1 className="mt-6 font-hand text-5xl">Order confirmed!</h1>

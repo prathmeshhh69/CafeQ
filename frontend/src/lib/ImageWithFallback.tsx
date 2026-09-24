@@ -1,25 +1,25 @@
 import { useState } from "react";
 
 const categoryStyle: Record<string, { background: string; accent: string }> = {
-  "Shawarma - Non-Veg": { background: "#f8e4c0", accent: "#e67b28" },
-  "Shawarma - Veg": { background: "#e4efd7", accent: "#6c8b42" },
-  Lassi: { background: "#f5d9e7", accent: "#ca6f98" },
-  Juice: { background: "#fae4b9", accent: "#e89a2d" },
-  Coffee: { background: "#eadbcb", accent: "#95603b" },
-  Lemonades: { background: "#eef0bd", accent: "#9a9d32" },
-  Mojito: { background: "#d8ece9", accent: "#3b8c85" },
-  "Ice Cream": { background: "#e8dff2", accent: "#8d72aa" },
-  "Summer Slam": { background: "#d9edf2", accent: "#4e91a7" },
-  "Modern Twist": { background: "#f4d6df", accent: "#be6380" },
-  "Ice Tea": { background: "#f2e2bb", accent: "#b27f30" },
-  International: { background: "#e5e0d7", accent: "#766f62" },
-  "Thick Shake": { background: "#ead7e6", accent: "#a46092" },
+  "Shawarma - Non-Veg": { background: "#ffe2cb", accent: "#a8421e" },
+  "Shawarma - Veg": { background: "#ffead9", accent: "#9f4028" },
+  Lassi: { background: "#ffe0d5", accent: "#bd3150" },
+  Juice: { background: "#ffebd0", accent: "#ad481d" },
+  Coffee: { background: "#ead7cf", accent: "#6b3528" },
+  Lemonades: { background: "#ffeadc", accent: "#b74d25" },
+  Mojito: { background: "#f9dbd4", accent: "#9f3b30" },
+  "Ice Cream": { background: "#ffe5df", accent: "#b62d4b" },
+  "Summer Slam": { background: "#ffdccd", accent: "#ad3d26" },
+  "Modern Twist": { background: "#f9d8dd", accent: "#a92849" },
+  "Ice Tea": { background: "#ffe8d6", accent: "#a94825" },
+  International: { background: "#e9d9d4", accent: "#713638" },
+  "Thick Shake": { background: "#f7dadb", accent: "#a8334d" },
 };
 
 type Props = Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> & { src?: string; category?: string };
 
 function categoryFallback(category?: string) {
-  const style = categoryStyle[category || ""] || { background: "#efe7d3", accent: "#6f6a5f" };
+  const style = categoryStyle[category || ""] || { background: "#f3ded4", accent: "#713b38" };
   const label = (category || "CafeQ").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;",
   }[character] || character));

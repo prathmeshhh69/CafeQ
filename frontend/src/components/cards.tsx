@@ -106,7 +106,7 @@ export function RecommendationCard({ item }: { item: MenuItem }) {
         <button
           disabled={cartBusy}
           onClick={() => { void add(item); }}
-          className={`mt-2 inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors ${inCart ? "bg-green/20 text-[#4d5c1f]" : "bg-lime text-ink hover:bg-lime-deep"}`}
+          className={`mt-2 inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors ${inCart ? "bg-ink/10 text-ink" : "bg-lime text-ink hover:bg-lime-deep"}`}
         >
           {inCart ? <><Check className="h-3.5 w-3.5" /> Added</> : <><Plus className="h-3.5 w-3.5" /> Add</>}
         </button>
@@ -177,7 +177,7 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
           return (
             <li key={s.key} className="flex flex-1 items-center last:flex-none">
               <div className="flex flex-col items-center gap-1.5 text-center">
-                <span className={`grid h-10 w-10 place-items-center rounded-full border-2 transition-colors ${done ? "border-green bg-green/20 text-[#4d5c1f]" : active ? "border-lime-deep bg-lime text-ink" : "border-line bg-cream text-muted"}`}>
+                <span className={`grid h-10 w-10 place-items-center rounded-full border-2 transition-colors ${done ? "border-ink bg-ink/10 text-ink" : active ? "border-lime-deep bg-lime text-ink" : "border-line bg-cream text-muted"}`}>
                   <Icon className="h-5 w-5" strokeWidth={2} />
                 </span>
                 <span className={`text-xs font-medium ${done || active ? "text-ink" : "text-muted"}`}>{s.label}</span>
@@ -195,7 +195,7 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
           return (
             <li key={s.key} className="flex gap-3">
               <div className="flex flex-col items-center">
-                <span className={`grid h-9 w-9 place-items-center rounded-full border-2 ${done ? "border-green bg-green/20 text-[#4d5c1f]" : active ? "border-lime-deep bg-lime text-ink" : "border-line bg-cream text-muted"}`}>
+                <span className={`grid h-9 w-9 place-items-center rounded-full border-2 ${done ? "border-ink bg-ink/10 text-ink" : active ? "border-lime-deep bg-lime text-ink" : "border-line bg-cream text-muted"}`}>
                   <Icon className="h-4 w-4" />
                 </span>
                 {i < STEPS.length - 1 && <span className={`my-1 w-0.5 flex-1 rounded-full ${i < current ? "bg-green" : "bg-line"}`} />}
