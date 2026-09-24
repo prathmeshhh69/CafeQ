@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, ClipboardList, UtensilsCrossed, Boxes, CalendarClock,
-  LogOut, Menu as MenuIcon, X, TrendingUp, IndianRupee, Package, AlertTriangle,
+  LogOut, Menu as MenuIcon, X, TrendingUp, IndianRupee, AlertTriangle,
   Plus, Pencil, Trash2, Search, ArrowUpCircle, Replace, ChevronRight, PackageX,
+  Clock3, CookingPot, CircleCheck, ReceiptText, UserRound, ArrowRight, ChevronDown, Check, Tag,
 } from "lucide-react";
+import { Select } from "@base-ui/react/select";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
-import { Button, Card, Input, StatusBadge, PaymentBadge, ConfirmationModal, Modal, EmptyState } from "../components/ui";
+import { Button, Card, Input, StatusBadge, PaymentBadge, ConfirmationModal, Modal, EmptyState, Skeleton } from "../components/ui";
 import { ImageWithFallback } from "../lib/ImageWithFallback";
 import { PlateDoodle } from "../components/Doodles";
 import {
@@ -91,26 +93,13 @@ export function AdminApp({ exit }: { exit: () => void }) {
 }
 
 // ---------- Dashboard ----------
-function MetricCard({ label, value, tone = "default", icon }: { label: string; value: string; tone?: "default" | "warn" | "danger" | "good"; icon?: React.ReactNode }) {
-  const toneCls = { default: "text-ink", warn: "text-orange", danger: "text-red", good: "text-green" }[tone];
-  return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted">{label}</span>
-        {icon && <span className={toneCls}>{icon}</span>}
-      </div>
-      <p className={`mt-2 text-2xl font-bold ${toneCls}`}>{value}</p>
-    </Card>
-  );
-}
-
 function Dashboard() {
   const today = upcomingDates()[0].iso;
   const [to, setTo] = useState(today);
   const [from, setFrom] = useState(() => {
-    const date = new Date(`${today}T12:00:00`);
+    const date = new Date(today + "T12:00:00");
     date.setDate(date.getDate() - 6);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
   });
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,91 +118,190 @@ function Dashboard() {
 
   const total = data?.summary.totalOrders ?? 0;
   const statusColors: Record<OrderStatus, string> = {
-    PENDING: "#ffa040", CONFIRMED: "#19151b", PREPARING: "#ec702a",
-    READY: "#d9541e", COMPLETED: "#9f4028", CANCELLED: "#cf2150",
+    PENDING: "#d97706",
+    CONFIRMED: "#6d5556",
+    PREPARING: "#ec702a",
+    READY: "#d9541e",
+    COMPLETED: "#6f7e43",
+    CANCELLED: "#cf2150",
   };
   const statusData = (FILTERS.filter((status): status is OrderStatus => status !== "ALL"))
-    .map((status) => ({ s: status[0] + status.slice(1).toLowerCase(),
-      v: data?.ordersByStatus.find((entry) => entry.status === status)?.count ?? 0, c: statusColors[status] }));
-  const revenueData = data?.revenueByDate.map((entry) => ({ d: entry.date.slice(5), v: entry.totalRevenue })) || [];
-  const bestSellers = data?.topMenuItems.map((entry) => ({ n: entry.name, v: entry.quantity })) || [];
+    .map((status) => ({
+      key: status,
+      label: status[0] + status.slice(1).toLowerCase(),
+      count: data?.ordersByStatus.find((entry) => entry.status === status)?.count ?? 0,
+      color: statusColors[status],
+    }));
+  const revenueData = data?.revenueByDate.map((entry) => ({ date: entry.date.slice(5), revenue: entry.totalRevenue })) || [];
+  const bestSellers = data?.topMenuItems.map((entry) => ({ name: entry.name, quantity: entry.quantity })) || [];
+  const inventoryAlerts = (data?.inventory.lowStockItems ?? 0) + (data?.inventory.outOfStockItems ?? 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto max-w-[1440px] space-y-5 sm:space-y-6">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h1 className="font-hand text-3xl">Good morning, Admin</h1>
-          <p className="text-sm text-muted">Here's how CafeQ is doing.</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-orange">CafeQ operations</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Good morning, Admin</h1>
+          <p className="mt-1 text-sm text-muted">A fresh look at how your cafe is doing.</p>
         </div>
-        <div className="flex items-end gap-2">
-          <Input label="From" type="date" value={from} onChange={(event) => setFrom(event.target.value)} className="py-2" />
-          <Input label="To" type="date" value={to} onChange={(event) => setTo(event.target.value)} className="py-2" />
+        <div className="grid grid-cols-2 gap-3 rounded-2xl border border-line bg-surface p-3 sm:flex sm:items-end sm:gap-4">
+          <span className="col-span-2 text-xs font-semibold uppercase tracking-wide text-muted sm:col-span-1 sm:self-center">Date range</span>
+          <Input label="From" type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} className="py-2" />
+          <Input label="To" type="date" value={to} min={from} onChange={(event) => setTo(event.target.value)} className="py-2" />
         </div>
       </div>
 
-      {loading && <p className="text-center text-muted">Loading dashboard…</p>}
-      {error && <Card className="px-6"><EmptyState illustration={<PlateDoodle />} title="We couldn't load the dashboard." body={error}
+      {loading && (
+        <div className="space-y-4" aria-label="Loading dashboard">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card className="space-y-4 p-5 sm:p-7"><Skeleton className="h-4 w-28" /><Skeleton className="h-10 w-48" /><Skeleton className="h-3 w-40" /></Card>
+            <Card className="space-y-4 p-5 sm:p-7"><Skeleton className="h-4 w-32" /><Skeleton className="h-10 w-40" /><Skeleton className="h-3 w-full" /></Card>
+          </div>
+          <Card className="p-5"><Skeleton className="h-20 w-full" /></Card>
+        </div>
+      )}
+      {error && <Card className="px-6"><EmptyState titleClassName="font-sans font-bold tracking-tight" illustration={<PlateDoodle />} title="We couldn't load the dashboard." body={error}
         action={<Button onClick={() => setRetry((value) => value + 1)}>Try Again</Button>} /></Card>}
-      {!loading && !error && data && <>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-        <MetricCard label="Total Orders" value={String(total)} icon={<ClipboardList className="h-4 w-4" />} />
-        <MetricCard label="Pending" value={String(data.summary.pendingOrders)} tone="warn" icon={<Package className="h-4 w-4" />} />
-        <MetricCard label="Completed" value={String(data.summary.completedOrders)} tone="good" />
-        <MetricCard label="Cancelled" value={String(data.summary.cancelledOrders)} tone="danger" />
-        <MetricCard label="Paid Orders" value={String(data.summary.paidOrders)} />
-        <MetricCard label="Total Revenue" value={money(data.summary.totalRevenue)} icon={<IndianRupee className="h-4 w-4" />} />
-      </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <MetricCard label="Total Items" value={String(data.inventory.totalItems)} icon={<Boxes className="h-4 w-4" />} />
-        <MetricCard label="Low Stock" value={String(data.inventory.lowStockItems)} tone="warn" icon={<AlertTriangle className="h-4 w-4" />} />
-        <MetricCard label="Out of Stock" value={String(data.inventory.outOfStockItems)} tone="danger" icon={<PackageX className="h-4 w-4" />} />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-5 lg:col-span-2">
-          <div className="mb-4 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-green" /><h3 className="font-semibold">Revenue Over Time</h3></div>
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={revenueData} margin={{ left: -12, right: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-line)" vertical={false} />
-              <XAxis dataKey="d" tick={{ fontSize: 12, fill: "var(--color-muted)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "var(--color-muted)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
-              <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--color-line)", fontSize: 13 }} formatter={(v) => money(Number(v))} />
-              <Line type="monotone" dataKey="v" stroke="var(--color-ink)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--color-lime)", stroke: "var(--color-ink)" }} activeDot={{ r: 5 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-        <Card className="p-5">
-          <h3 className="mb-4 font-semibold">Orders by Status</h3>
-          <div className="space-y-2.5">
-            {statusData.map((s) => (
-              <div key={s.s}>
-                <div className="flex justify-between text-xs"><span className="text-muted">{s.s}</span><span className="font-semibold">{s.v}</span></div>
-                <div className="mt-1 h-2 overflow-hidden rounded-full bg-cream">
-                  <div className="h-full rounded-full" style={{ width: `${Math.min(100, (s.v / Math.max(1, total)) * 100)}%`, background: s.c }} />
+      {!loading && !error && data && (
+        <>
+          <section aria-label="Revenue and orders" className="grid gap-4 lg:grid-cols-2">
+            <div className="relative overflow-hidden rounded-2xl bg-ink p-5 text-cream shadow-md sm:p-7">
+              <div className="pointer-events-none absolute -right-10 -top-14 h-48 w-48 rounded-full bg-orange/20 blur-2xl" />
+              <div className="relative flex h-full flex-col justify-between gap-8">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-cream/70">Sales in this period</p>
+                    <p className="mt-3 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">{money(data.summary.totalRevenue)}</p>
+                  </div>
+                  <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-orange text-ink">
+                    <IndianRupee className="h-5 w-5" />
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/15 pt-4 text-sm">
+                  <span className="inline-flex items-center gap-2"><TrendingUp className="h-4 w-4 text-lime" /> Revenue overview</span>
+                  <span className="text-cream/60">{from} <span aria-hidden="true">→</span> {to}</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </Card>
-      </div>
+            </div>
 
-      <Card className="p-5">
-        <h3 className="mb-4 font-semibold">Best Selling Items</h3>
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={bestSellers} margin={{ left: -16, right: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-line)" vertical={false} />
-            <XAxis dataKey="n" tick={{ fontSize: 12, fill: "var(--color-muted)" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 12, fill: "var(--color-muted)" }} axisLine={false} tickLine={false} />
-            <Tooltip cursor={{ fill: "var(--color-cream)" }} contentStyle={{ borderRadius: 12, border: "1px solid var(--color-line)", fontSize: 13 }} formatter={(v) => `${v} sold`} />
-            <Bar dataKey="v" radius={[8, 8, 0, 0]}>
-              {bestSellers.map((_, i) => <Cell key={i} fill={i === 0 ? "var(--color-ink)" : "var(--color-lime)"} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </Card>
-      </>}
+            <Card className="p-5 sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-muted">Orders in this period</p>
+                  <p className="mt-1 text-4xl font-bold tabular-nums">{total}</p>
+                </div>
+                <div className="rounded-xl bg-orange/10 px-3 py-2 text-right">
+                  <p className="text-xs font-medium text-muted">Paid</p>
+                  <p className="text-lg font-bold tabular-nums text-orange">{data.summary.paidOrders}</p>
+                </div>
+              </div>
+              <div className="mt-5 flex h-2 overflow-hidden rounded-full bg-cream" role="img" aria-label="Order status distribution">
+                {statusData.map((status) => (
+                  <span key={status.key} style={{ width: String(total ? (status.count / total) * 100 : 0) + "%", backgroundColor: status.color }} />
+                ))}
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+                {statusData.map((status) => (
+                  <div key={status.key} className="flex min-w-0 items-center gap-2 text-xs">
+                    <span className="h-2 w-2 flex-none rounded-full" style={{ backgroundColor: status.color }} />
+                    <span className="truncate text-muted">{status.label}</span>
+                    <span className="ml-auto font-semibold tabular-nums">{status.count}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </section>
+
+          <Card className={"overflow-hidden p-4 sm:p-5 " + (inventoryAlerts ? "border-orange/40 bg-orange/5" : "bg-surface")}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className={"grid h-10 w-10 flex-none place-items-center rounded-xl " + (inventoryAlerts ? "bg-orange/15 text-orange" : "bg-green/15 text-green")}>
+                  {inventoryAlerts ? <AlertTriangle className="h-5 w-5" /> : <Boxes className="h-5 w-5" />}
+                </span>
+                <div>
+                  <h2 className="font-semibold">{inventoryAlerts ? "Inventory needs attention" : "Inventory looks good"}</h2>
+                  <p className="text-sm text-muted">{inventoryAlerts ? "Check these items before the next rush." : "No low or out-of-stock items right now."}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:min-w-[20rem] sm:grid-cols-3">
+                <div className="rounded-xl bg-surface/80 px-3 py-2">
+                  <p className="text-xs text-muted">Tracked items</p>
+                  <p className="mt-0.5 text-xl font-bold tabular-nums">{data.inventory.totalItems}</p>
+                </div>
+                <div className="rounded-xl bg-surface/80 px-3 py-2">
+                  <p className="text-xs text-muted">Low stock</p>
+                  <p className="mt-0.5 text-xl font-bold tabular-nums">{data.inventory.lowStockItems}</p>
+                </div>
+                <div className={"rounded-xl px-3 py-2 " + (data.inventory.outOfStockItems ? "bg-red/10" : "bg-surface/80")}>
+                  <p className="text-xs text-muted">Out of stock</p>
+                  <p className={"mt-0.5 text-xl font-bold tabular-nums " + (data.inventory.outOfStockItems ? "text-red" : "text-ink")}>{data.inventory.outOfStockItems}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <section aria-label="Sales and menu performance" className="grid gap-4 xl:grid-cols-5">
+            <Card className="min-w-0 p-4 sm:p-5 xl:col-span-3">
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-orange">Sales</p>
+                  <h2 className="mt-1 text-lg font-semibold">Revenue over time</h2>
+                  <p className="text-sm text-muted">Daily sales for the selected dates</p>
+                </div>
+                <span className="rounded-full bg-cream px-3 py-1 text-xs font-medium text-muted">{revenueData.length} days</span>
+              </div>
+              {revenueData.length ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={revenueData} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
+                    <CartesianGrid strokeDasharray="3 5" stroke="var(--color-line)" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} tickMargin={10} minTickGap={24} />
+                    <YAxis width={58} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} tickFormatter={(value) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", notation: "compact", maximumFractionDigits: 1 }).format(Number(value))} />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--color-line)", backgroundColor: "var(--color-surface)", fontSize: 13 }}
+                      labelStyle={{ color: "var(--muted-foreground)", marginBottom: 4 }} formatter={(value) => [money(Number(value)), "Sales"]} />
+                    <Line type="monotone" dataKey="revenue" name="Sales" stroke="var(--color-orange)" strokeWidth={3} dot={false}
+                      activeDot={{ r: 5, fill: "var(--color-orange)", stroke: "var(--color-surface)", strokeWidth: 2 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : <p className="grid h-[260px] place-items-center text-sm text-muted">No sales data for these dates.</p>}
+            </Card>
+
+            <Card className="min-w-0 p-4 sm:p-5 xl:col-span-2">
+              <div className="mb-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-orange">Cafe favourites</p>
+                <h2 className="mt-1 text-lg font-semibold">Best-selling items</h2>
+                <p className="text-sm text-muted">Units sold in this period</p>
+              </div>
+              {bestSellers.length ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={bestSellers} layout="vertical" margin={{ top: 4, right: 12, bottom: 0, left: 4 }}>
+                    <CartesianGrid strokeDasharray="3 5" stroke="var(--color-line)" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" width={104} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false}
+                      tickFormatter={(value) => String(value).length > 15 ? String(value).slice(0, 14) + "…" : value} />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--color-line)", backgroundColor: "var(--color-surface)", fontSize: 13 }}
+                      labelStyle={{ color: "var(--muted-foreground)", marginBottom: 4 }} formatter={(value) => [Number(value), "Units sold"]} />
+                    <Bar dataKey="quantity" name="Units sold" fill="var(--color-orange)" radius={[0, 6, 6, 0]} barSize={18} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : <p className="grid h-[260px] place-items-center text-sm text-muted">No item sales for these dates.</p>}
+            </Card>
+          </section>
+        </>
+      )}
     </div>
+  );
+}
+function MetricCard({ label, value, tone = "default", icon }: { label: string; value: string; tone?: "default" | "warn" | "danger" | "good"; icon?: React.ReactNode }) {
+  const toneCls = { default: "text-ink", warn: "text-orange", danger: "text-red", good: "text-green" }[tone];
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-muted">{label}</span>
+        {icon && <span className={toneCls}>{icon}</span>}
+      </div>
+      <p className={`mt-2 text-2xl font-bold ${toneCls}`}>{value}</p>
+    </Card>
   );
 }
 
@@ -225,6 +313,23 @@ const NEXT_ACTION: Partial<Record<OrderStatus, { to: OrderStatus; label: string 
   READY: { to: "COMPLETED", label: "Mark Completed" },
 };
 const FILTERS: (OrderStatus | "ALL")[] = ["ALL", "PENDING", "CONFIRMED", "PREPARING", "READY", "COMPLETED", "CANCELLED"];
+const FILTER_META: Record<OrderStatus | "ALL", { label: string; icon: typeof ClipboardList }> = {
+  ALL: { label: "All orders", icon: ClipboardList },
+  PENDING: { label: "Pending", icon: Clock3 },
+  CONFIRMED: { label: "Confirmed", icon: CircleCheck },
+  PREPARING: { label: "Preparing", icon: CookingPot },
+  READY: { label: "Ready", icon: ReceiptText },
+  COMPLETED: { label: "Completed", icon: CircleCheck },
+  CANCELLED: { label: "Cancelled", icon: X },
+};
+const STATUS_EDGE: Record<OrderStatus, string> = {
+  PENDING: "border-l-orange",
+  CONFIRMED: "border-l-amber-700/50",
+  PREPARING: "border-l-[#ec702a]",
+  READY: "border-l-[#d9541e]",
+  COMPLETED: "border-l-green",
+  CANCELLED: "border-l-red",
+};
 
 function AdminOrders() {
   const { toast, user } = useStore();
@@ -263,6 +368,9 @@ function AdminOrders() {
   }, [selected, user?.id]);
 
   const list = merged.filter((o) => filter === "ALL" || o.status === filter);
+  const activeOrders = merged.filter((o) => ["PENDING", "CONFIRMED", "PREPARING", "READY"].includes(o.status)).length;
+  const completedOrders = merged.filter((o) => o.status === "COMPLETED").length;
+  const paidRevenue = merged.filter((o) => o.payment === "PAID").reduce((sum, o) => sum + o.total, 0);
   const order = merged.find((o) => o.id === selected);
 
   const advance = async (o: Order) => {
@@ -293,70 +401,80 @@ function AdminOrders() {
 
   return (
     <div className="space-y-5">
-      <h1 className="font-hand text-3xl">Order Management</h1>
-      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-orange">Cafe operations</p>
+          <h1 className="mt-1 font-sans text-3xl font-extrabold tracking-tight text-ink">Order Management</h1>
+          <p className="mt-1 text-sm text-muted">Keep every cup, plate, and pickup moving.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+          {[
+            { label: "Total orders", value: merged.length, icon: ClipboardList, tone: "text-ink" },
+            { label: "In progress", value: activeOrders, icon: CookingPot, tone: "text-orange" },
+            { label: "Completed", value: completedOrders, icon: CircleCheck, tone: "text-green" },
+            { label: "Paid sales", value: money(paidRevenue), icon: IndianRupee, tone: "text-ink" },
+          ].map(({ label, value, icon: Icon, tone }) => (
+            <div key={label} className="flex min-w-0 items-center gap-2.5 rounded-xl border border-line bg-surface px-3 py-2 shadow-sm transition-shadow hover:shadow-md motion-reduce:transition-none">
+              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cream ${tone}`}><Icon className="h-4 w-4" /></span>
+              <span className="min-w-0"><span className="block text-[10px] font-medium text-muted">{label}</span><span className={`block truncate text-sm font-bold tabular-nums ${tone}`}>{value}</span></span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div aria-label="Filter orders by status" className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
         {FILTERS.map((f) => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`flex-none rounded-full border px-3.5 py-1.5 text-xs font-semibold capitalize transition-colors ${filter === f ? "border-lime-deep bg-lime" : "border-line bg-surface text-muted hover:text-ink"}`}>
-            {f === "ALL" ? "All" : f.toLowerCase()}
+          <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}
+            className={`flex flex-none items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange motion-reduce:transition-none ${filter === f ? "border-orange bg-orange text-white shadow-sm" : "border-line bg-surface text-muted hover:-translate-y-0.5 hover:border-orange/50 hover:text-ink hover:shadow-sm"}`}>
+            {(() => { const Icon = FILTER_META[f].icon; return <Icon className="h-3.5 w-3.5" />; })()}
+            <span>{FILTER_META[f].label}</span>
+            <span className={`rounded-md px-1.5 py-0.5 tabular-nums ${filter === f ? "bg-white/20" : "bg-cream"}`}>{f === "ALL" ? merged.length : merged.filter((o) => o.status === f).length}</span>
           </button>
         ))}
       </div>
 
-      {error && <Card className="px-6"><EmptyState illustration={<PlateDoodle />} title="We couldn't load orders." body={error}
+      {error && <Card className="px-6"><EmptyState titleClassName="font-sans font-bold tracking-tight" illustration={<PlateDoodle />} title="We couldn't load orders." body={error}
         action={<Button onClick={() => { void reload(); }}>Try Again</Button>} /></Card>}
-      {loading && <p className="text-center text-muted">Loading orders…</p>}
-      {!loading && !error && <Card className="overflow-hidden">
-        {/* Desktop table */}
-        <table className="hidden w-full text-sm md:table">
-          <thead>
-            <tr className="border-b border-line bg-cream/60 text-left text-xs uppercase tracking-wide text-muted">
-              <th className="px-4 py-3 font-semibold">Order ID</th>
-              <th className="px-4 py-3 font-semibold">Customer</th>
-              <th className="px-4 py-3 font-semibold">Amount</th>
-              <th className="px-4 py-3 font-semibold">Payment</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {list.map((o) => (
-              <tr key={o.id} className="hover:bg-cream/40">
-                <td className="px-4 py-3"><button onClick={() => setSelected(o.id)} className="font-semibold hover:underline">{o.id}</button></td>
-                <td className="px-4 py-3">{o.customer.name}</td>
-                <td className="px-4 py-3 font-medium tabular-nums">{money(o.total)}</td>
-                <td className="px-4 py-3"><PaymentBadge status={o.payment} /></td>
-                <td className="px-4 py-3"><StatusBadge status={o.status} /></td>
-                <td className="px-4 py-3">
-                  {NEXT_ACTION[o.status]
-                    ? <Button size="sm" disabled={!!busy} onClick={() => { void advance(o); }}>{NEXT_ACTION[o.status]!.label}</Button>
-                    : <Button size="sm" variant="ghost" onClick={() => setSelected(o.id)}>Details <ChevronRight className="h-4 w-4" /></Button>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {/* Mobile cards */}
-        <div className="divide-y divide-line md:hidden">
-          {list.map((o) => (
-            <div key={o.id} className="p-4">
-              <div className="flex items-center justify-between"><button onClick={() => setSelected(o.id)} className="font-semibold">{o.id}</button><StatusBadge status={o.status} /></div>
-              <p className="mt-1 text-sm text-muted">{o.customer.name} · {money(o.total)}</p>
-              <div className="mt-2 flex items-center justify-between"><PaymentBadge status={o.payment} />
-                {NEXT_ACTION[o.status] && <Button size="sm" disabled={!!busy} onClick={() => { void advance(o); }}>{NEXT_ACTION[o.status]!.label}</Button>}
+      {loading && <div className="space-y-3" aria-label="Loading orders">
+        {Array.from({ length: 4 }).map((_, index) => <Card key={index} className="flex items-center gap-4 p-4 sm:p-5"><Skeleton className="h-10 w-10 shrink-0" /><div className="flex-1 space-y-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-3 w-52 max-w-full" /></div><Skeleton className="hidden h-8 w-24 sm:block" /></Card>)}
+      </div>}
+      {!loading && !error && <div className="space-y-2.5">
+        {list.map((o) => {
+          const active = ["PENDING", "CONFIRMED", "PREPARING", "READY"].includes(o.status);
+          const action = NEXT_ACTION[o.status];
+          return <article key={o.id} className={`group rounded-2xl border border-line border-l-4 ${STATUS_EDGE[o.status]} bg-surface p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none motion-reduce:transition-none sm:p-5`}>
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] sm:items-center">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button type="button" onClick={() => setSelected(o.id)} className="flex items-center gap-1.5 text-sm font-bold tracking-tight hover:text-orange focus-visible:outline-2 focus-visible:outline-orange">
+                    <ReceiptText className="h-4 w-4 text-orange" />{o.id}<ArrowRight className="h-3.5 w-3.5 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100 motion-reduce:transition-none" />
+                  </button>
+                  <span className="text-xs text-muted">{o.pickupSlot}</span>
+                </div>
+                <div className="mt-2 flex min-w-0 items-center gap-2 text-sm">
+                  <UserRound className="h-4 w-4 shrink-0 text-muted" /><span className="truncate font-medium">{o.customer.name}</span>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span className="text-lg font-bold tabular-nums">{money(o.total)}</span>
+                <PaymentBadge status={o.payment} />
+                <span className="relative inline-flex"><StatusBadge status={o.status} />{active && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-orange ring-2 ring-surface motion-safe:animate-pulse motion-reduce:animate-none" />}</span>
+              </div>
+              <div className="flex items-center gap-2 sm:justify-end">
+                {action ? <Button size="sm" disabled={!!busy} onClick={() => { void advance(o); }}>{action.label}</Button> : null}
+                <Button size="sm" variant="ghost" onClick={() => setSelected(o.id)}>Details <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" /></Button>
               </div>
             </div>
-          ))}
-        </div>
-        {list.length === 0 && <EmptyState illustration={<PlateDoodle />} title="No orders here." body="Try another filter." />}
-      </Card>}
+          </article>;
+        })}
+        {list.length === 0 && <Card className="px-6"><EmptyState titleClassName="font-sans font-bold tracking-tight" illustration={<PlateDoodle />} title={filter === "ALL" ? "No orders yet." : `No ${FILTER_META[filter].label.toLowerCase()} orders.`} body={filter === "ALL" ? "New cafe orders will show up here as soon as they arrive." : "Try another status to see more orders."} /></Card>}
+      </div>}
 
       {/* Detail side panel */}
       <Modal open={!!order} onClose={() => setSelected(null)} className="max-w-lg sm:!ml-auto sm:!mr-0 sm:h-screen sm:!max-h-screen sm:!rounded-none sm:rounded-l-3xl">
         {order && (
           <div className="p-6">
             <div className="flex items-center justify-between">
-              <h2 className="font-hand text-2xl">Order {order.id}</h2>
+              <h2 className="font-sans text-2xl font-bold tracking-tight text-ink">Order {order.id}</h2>
               <button onClick={() => setSelected(null)}><X className="h-5 w-5" /></button>
             </div>
             <div className="mt-2 flex gap-2"><StatusBadge status={order.status} /><PaymentBadge status={order.payment} /></div>
@@ -402,6 +520,9 @@ function AdminOrders() {
 function AdminMenu() {
   const { toast } = useStore();
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -409,6 +530,7 @@ function AdminMenu() {
   const [creating, setCreating] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const categoryOptions = [...new Set(items.map((item) => item.category))];
+  const pageSize = 10;
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -418,6 +540,15 @@ function AdminMenu() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { void reload(); }, [reload]);
+
+  const filteredItems = items.filter((item) => {
+    const matchesQuery = `${item.name} ${item.description}`.toLowerCase().includes(query.trim().toLowerCase());
+    const matchesCategory = categoryFilter === "ALL" || item.category === categoryFilter;
+    return matchesQuery && matchesCategory;
+  });
+  const pageCount = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pageItems = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const save = async (item: MenuItem) => {
     if (busy) return;
@@ -466,14 +597,53 @@ function AdminMenu() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="font-hand text-3xl">Menu Management</h1>
+        <h1 className="font-sans text-3xl font-extrabold tracking-tight text-ink">Menu Management</h1>
         <Button disabled={busy} onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> Add Menu Item</Button>
       </div>
 
       {loading && <p className="text-center text-muted">Loading menu items…</p>}
-      {error && <Card className="px-6"><EmptyState illustration={<PlateDoodle />} title="We couldn't load menu items." body={error}
+      {error && <Card className="px-6"><EmptyState titleClassName="font-sans font-bold tracking-tight" illustration={<PlateDoodle />} title="We couldn't load menu items." body={error}
         action={<Button onClick={() => { void reload(); }}>Try Again</Button>} /></Card>}
       {!loading && !error && <Card className="overflow-hidden">
+        <div className="grid gap-3 border-b border-line bg-surface p-4 sm:grid-cols-[minmax(0,1fr)_220px] sm:p-5">
+          <Input
+            label="Search menu items"
+            icon={<Search className="h-4 w-4" />}
+            value={query}
+            onChange={(event) => { setQuery(event.target.value); setPage(1); }}
+            placeholder="Search by name or description"
+          />
+          <div>
+            <span className="mb-1.5 block text-sm font-medium text-ink">Category</span>
+            <Select.Root value={categoryFilter} onValueChange={(value) => { setCategoryFilter(value ?? "ALL"); setPage(1); }}>
+              <Select.Trigger className="group flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-left text-sm font-medium text-ink shadow-sm transition-all hover:border-orange/50 hover:shadow focus-visible:border-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange/25 data-[popup-open]:border-orange/60 data-[popup-open]:shadow-md">
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-orange/10 text-orange"><Tag className="h-3.5 w-3.5" /></span>
+                  <Select.Value>{(value: string | null) => value === "ALL" || !value ? "All categories" : value}</Select.Value>
+                </span>
+                <Select.Icon className="text-muted transition-transform duration-150 group-data-[popup-open]:rotate-180"><ChevronDown className="h-4 w-4" /></Select.Icon>
+              </Select.Trigger>
+              <Select.Portal>
+                <Select.Positioner sideOffset={7} align="start" className="z-[60]">
+                  <Select.Popup className="animate-fade-up min-w-[var(--anchor-width)] overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-xl">
+                    <div className="flex items-center justify-between px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+                      <span>Browse categories</span><span>{categoryOptions.length}</span>
+                    </div>
+                    <Select.List className="max-h-64 overflow-y-auto">
+                      {[{ value: "ALL", label: "All categories" }, ...categoryOptions.map((category) => ({ value: category, label: category }))].map(({ value, label }) => (
+                        <Select.Item key={value} value={value} className="group/item flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm text-ink outline-none transition-colors data-[highlighted]:bg-cream data-[selected]:bg-orange/10 data-[selected]:font-semibold data-[selected]:text-orange">
+                          <Select.ItemText>{label}</Select.ItemText>
+                          <Select.ItemIndicator className="text-orange"><Check className="h-4 w-4" /></Select.ItemIndicator>
+                        </Select.Item>
+                      ))}
+                    </Select.List>
+                    <Select.ScrollDownArrow className="flex justify-center bg-surface py-1 text-muted"><ChevronDown className="h-3 w-3" /></Select.ScrollDownArrow>
+                  </Select.Popup>
+                </Select.Positioner>
+              </Select.Portal>
+            </Select.Root>
+          </div>
+        </div>
         <table className="hidden w-full text-sm md:table">
           <thead>
             <tr className="border-b border-line bg-cream/60 text-left text-xs uppercase tracking-wide text-muted">
@@ -483,7 +653,7 @@ function AdminMenu() {
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {items.map((m) => (
+            {pageItems.map((m) => (
               <tr key={m.id} className="hover:bg-cream/40">
                 <td className="px-4 py-2"><ImageWithFallback src={m.image} alt={m.name} category={m.category} className="h-11 w-11 rounded-lg object-cover" /></td>
                 <td className="px-4 py-2 font-medium">{m.name}</td>
@@ -506,7 +676,7 @@ function AdminMenu() {
           </tbody>
         </table>
         <div className="divide-y divide-line md:hidden">
-          {items.map((m) => (
+          {pageItems.map((m) => (
             <div key={m.id} className="flex items-center gap-3 p-4">
               <ImageWithFallback src={m.image} alt={m.name} category={m.category} className="h-12 w-12 rounded-lg object-cover" />
               <div className="min-w-0 flex-1"><p className="truncate font-medium">{m.name}</p><p className="text-xs text-muted">{m.category} · {money(m.price)}</p></div>
@@ -515,6 +685,45 @@ function AdminMenu() {
             </div>
           ))}
         </div>
+        {filteredItems.length === 0 ? (
+          <p className="px-4 py-10 text-center text-sm text-muted">No menu items match those filters.</p>
+        ) : (
+          <div className="flex flex-col gap-3 border-t border-line bg-cream/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <p className="text-xs text-muted sm:text-sm">
+              Showing <span className="font-semibold text-ink">{(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredItems.length)}</span> of <span className="font-semibold text-ink">{filteredItems.length}</span> items
+            </p>
+            <nav aria-label="Menu item pages" className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPage((previous) => Math.max(1, previous - 1))}
+                disabled={currentPage === 1}
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink transition-colors hover:border-orange/50 hover:bg-cream disabled:pointer-events-none disabled:opacity-45"
+              >
+                Previous
+              </button>
+              {Array.from({ length: pageCount }, (_, index) => index + 1).map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  aria-label={`Page ${pageNumber}`}
+                  aria-current={currentPage === pageNumber ? "page" : undefined}
+                  onClick={() => setPage(pageNumber)}
+                  className={`grid h-9 min-w-9 place-items-center rounded-lg border px-2 text-xs font-semibold transition-colors ${currentPage === pageNumber ? "border-orange bg-orange text-white shadow-sm" : "border-line bg-surface text-muted hover:border-orange/50 hover:bg-cream hover:text-ink"}`}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setPage((previous) => Math.min(pageCount, previous + 1))}
+                disabled={currentPage === pageCount}
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink transition-colors hover:border-orange/50 hover:bg-cream disabled:pointer-events-none disabled:opacity-45"
+              >
+                Next
+              </button>
+            </nav>
+          </div>
+        )}
       </Card>}
 
       {(editing || creating) && (
@@ -538,7 +747,7 @@ function MenuItemModal({ item, categories, busy, onClose, onSave }: {
   return (
     <Modal open onClose={onClose} className="max-w-lg">
       <div className="p-6">
-        <h2 className="font-hand text-2xl">{item ? "Edit Menu Item" : "Add Menu Item"}</h2>
+        <h2 className="font-sans text-2xl font-bold tracking-tight text-ink">{item ? "Edit Menu Item" : "Add Menu Item"}</h2>
         <div className="mt-4 space-y-3">
           <Input label="Name" value={form.name} onChange={(e) => upd({ name: e.target.value })} placeholder="e.g. Espresso" />
           <label className="block">
@@ -592,6 +801,7 @@ function AdminInventory() {
   const [action, setAction] = useState<{ item: InventoryRow; mode: "add" | "set" | "min" } | null>(null);
   const [creating, setCreating] = useState(false);
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
 
   const reload = useCallback(async (initial = false) => {
     setLoading(true);
@@ -614,6 +824,10 @@ function AdminInventory() {
   const out = items.filter((m) => stockHealth(m) === "Out of Stock").length;
 
   const shown = (filter === "all" ? items : lowRows).filter((m) => m.name.toLowerCase().includes(q.toLowerCase()));
+  const pageSize = 10;
+  const pageCount = Math.max(1, Math.ceil(shown.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pageItems = shown.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const inventoryMenuIds = new Set(items.map((item) => item.id));
   const missingMenuItems = menuItems.filter((item) => !inventoryMenuIds.has(item.id));
 
@@ -652,7 +866,7 @@ function AdminInventory() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="font-hand text-3xl">Inventory</h1>
+        <h1 className="font-sans text-3xl font-extrabold tracking-tight text-ink">Inventory</h1>
         <Button disabled={loading || busy || missingMenuItems.length === 0} onClick={() => setCreating(true)}>
           <Plus className="h-4 w-4" /> Add Inventory
         </Button>
@@ -666,23 +880,23 @@ function AdminInventory() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="inline-flex rounded-xl border border-line bg-surface p-1">
           {(["all", "low"] as const).map((f) => (
-            <button key={f} onClick={() => setFilter(f)} className={`rounded-lg px-4 py-1.5 text-sm font-semibold ${filter === f ? "bg-lime text-ink" : "text-muted"}`}>
+            <button key={f} type="button" aria-pressed={filter === f} onClick={() => { setFilter(f); setPage(1); }} className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-all duration-150 ${filter === f ? "bg-lime text-ink shadow-sm" : "text-muted hover:bg-cream hover:text-ink"}`}>
               {f === "all" ? "All Inventory" : "Low Stock"}
             </button>
           ))}
         </div>
         <div className="relative ml-auto">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product…"
+          <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search product…" aria-label="Search inventory"
             className="rounded-xl border border-line bg-surface py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-lime/60" />
         </div>
       </div>
 
       {loading ? <p className="text-center text-muted">Loading inventory…</p>
-      : error ? <Card className="px-6"><EmptyState illustration={<PlateDoodle />} title="We couldn't load inventory." body={error}
+      : error ? <Card className="px-6"><EmptyState titleClassName="font-sans font-bold tracking-tight" illustration={<PlateDoodle />} title="We couldn't load inventory." body={error}
           action={<Button onClick={() => { void reload(); }}>Try Again</Button>} /></Card>
       : shown.length === 0 ? (
-        <Card className="px-6"><EmptyState illustration={<PlateDoodle />} title="All stocked up!" body="No items need attention right now." /></Card>
+        <Card className="px-6"><EmptyState titleClassName="font-sans font-bold tracking-tight" illustration={<PlateDoodle />} title="All stocked up!" body="No items need attention right now." /></Card>
       ) : (
         <Card className="overflow-hidden">
           <table className="hidden w-full text-sm md:table">
@@ -694,7 +908,7 @@ function AdminInventory() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {shown.map((m) => {
+              {pageItems.map((m) => {
                 const health = stockHealth(m);
                 return (
                   <tr key={m.id} className="hover:bg-cream/40">
@@ -717,7 +931,7 @@ function AdminInventory() {
             </tbody>
           </table>
           <div className="divide-y divide-line md:hidden">
-            {shown.map((m) => (
+            {pageItems.map((m) => (
               <div key={m.id} className="p-4">
                 <div className="flex items-center gap-3">
                   <ImageWithFallback src={m.image} alt={m.name} category={m.category} className="h-11 w-11 rounded-lg object-cover" />
@@ -730,6 +944,35 @@ function AdminInventory() {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="flex flex-col gap-3 border-t border-line bg-cream/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <p className="text-xs text-muted sm:text-sm">
+              Showing <span className="font-semibold text-ink">{(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, shown.length)}</span> of <span className="font-semibold text-ink">{shown.length}</span> items
+            </p>
+            <nav aria-label="Inventory pages" className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPage((previous) => Math.max(1, previous - 1))}
+                disabled={currentPage === 1}
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink transition-colors hover:border-orange/50 hover:bg-cream disabled:pointer-events-none disabled:opacity-45"
+              >Previous</button>
+              {Array.from({ length: pageCount }, (_, index) => index + 1).map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  aria-label={`Page ${pageNumber}`}
+                  aria-current={currentPage === pageNumber ? "page" : undefined}
+                  onClick={() => setPage(pageNumber)}
+                  className={`grid h-9 min-w-9 place-items-center rounded-lg border px-2 text-xs font-semibold transition-colors ${currentPage === pageNumber ? "border-orange bg-orange text-white shadow-sm" : "border-line bg-surface text-muted hover:border-orange/50 hover:bg-cream hover:text-ink"}`}
+                >{pageNumber}</button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setPage((previous) => Math.min(pageCount, previous + 1))}
+                disabled={currentPage === pageCount}
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink transition-colors hover:border-orange/50 hover:bg-cream disabled:pointer-events-none disabled:opacity-45"
+              >Next</button>
+            </nav>
           </div>
         </Card>
       )}
@@ -756,7 +999,7 @@ function StockModal({ action, busy, onClose, onApply }: { action: { item: Invent
         <div className={`mb-3 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-bold ${isAdd ? "bg-lime text-ink" : action.mode === "set" ? "bg-ink text-cream" : "bg-cream text-ink border border-line"}`}>
           {isAdd ? <ArrowUpCircle className="h-4 w-4" /> : action.mode === "set" ? <Replace className="h-4 w-4" /> : null}{title}
         </div>
-        <h2 className="font-hand text-2xl">{action.item.name}</h2>
+        <h2 className="font-sans text-2xl font-bold tracking-tight text-ink">{action.item.name}</h2>
         <p className="mt-1 text-sm text-muted">
           {isAdd ? <>Adds to the current stock of <b className="text-ink">{action.item.stock}</b>.</>
             : action.mode === "set" ? <>Replaces current stock of <b className="text-ink">{action.item.stock}</b> entirely.</>
@@ -782,7 +1025,7 @@ function CreateInventoryModal({ items, busy, onClose, onCreate }: {
   const [quantity, setQuantity] = useState(0);
   const [minimumStock, setMinimumStock] = useState(5);
   return <Modal open onClose={onClose} className="max-w-sm"><div className="p-6">
-    <h2 className="font-hand text-2xl">Add Inventory</h2>
+    <h2 className="font-sans text-2xl font-bold tracking-tight text-ink">Add Inventory</h2>
     <label className="mt-4 block text-sm font-medium">Menu Item
       <select value={menuItem} onChange={(event) => setMenuItem(event.target.value)}
         className="mt-1.5 w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm">
@@ -877,7 +1120,7 @@ function AdminSlots() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-hand text-3xl">Pickup Slots</h1>
+        <h1 className="font-sans text-3xl font-extrabold tracking-tight text-ink">Pickup Slots</h1>
         <Button disabled={busy} onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> Create Time Slot</Button>
       </div>
 
@@ -891,9 +1134,9 @@ function AdminSlots() {
       </div>
 
       {loading && <p className="text-center text-muted">Loading pickup slots…</p>}
-      {error && <Card className="px-6"><EmptyState illustration={<PlateDoodle />} title="We couldn't load pickup slots." body={error}
+      {error && <Card className="px-6"><EmptyState titleClassName="font-sans font-bold tracking-tight" illustration={<PlateDoodle />} title="We couldn't load pickup slots." body={error}
         action={<Button onClick={() => setRetry((value) => value + 1)}>Try Again</Button>} /></Card>}
-      {!loading && !error && current.length === 0 && <Card className="px-6"><EmptyState illustration={<PlateDoodle />}
+      {!loading && !error && current.length === 0 && <Card className="px-6"><EmptyState titleClassName="font-sans font-bold tracking-tight" illustration={<PlateDoodle />}
         title="No pickup slots yet." body="Create a slot for this date." /></Card>}
       {!loading && !error && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {current.map((s) => {
@@ -938,7 +1181,7 @@ function CreateSlotModal({ date, busy, onClose, onCreate }: {
   return (
     <Modal open onClose={onClose} className="max-w-sm">
       <div className="p-6">
-        <h2 className="font-hand text-2xl">Create Time Slot</h2>
+        <h2 className="font-sans text-2xl font-bold tracking-tight text-ink">Create Time Slot</h2>
         <div className="mt-4 space-y-3">
           <Input label="Date" type="date" value={date} readOnly />
           <div className="grid grid-cols-2 gap-3">
@@ -961,7 +1204,7 @@ function EditSlotModal({ slot, busy, onClose, onSave }: {
 }) {
   const [maxOrders, setMaxOrders] = useState(slot.max);
   return <Modal open onClose={onClose} className="max-w-sm"><div className="p-6">
-    <h2 className="font-hand text-2xl">Edit Time Slot</h2>
+    <h2 className="font-sans text-2xl font-bold tracking-tight text-ink">Edit Time Slot</h2>
     <p className="mt-1 text-sm text-muted">{slot.start} – {slot.end} · {slot.current} orders booked</p>
     <Input className="mt-4" label="Maximum Orders" type="number" min={1} value={maxOrders}
       onChange={(event) => setMaxOrders(Number(event.target.value))} />

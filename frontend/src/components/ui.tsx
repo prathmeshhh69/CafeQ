@@ -52,7 +52,7 @@ export function Input({ label, icon, hint, error, className = "", id, ...rest }:
         {icon && <span className="pointer-events-none absolute left-3.5 text-muted">{icon}</span>}
         <input
           id={id}
-          className={`w-full rounded-xl border bg-surface px-4 py-2.5 text-sm text-ink placeholder:text-muted/70 transition-colors focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-lime/60 ${icon ? "pl-10" : ""} ${error ? "border-red" : "border-line"} ${className}`}
+          className={`w-full rounded-xl border bg-surface px-4 py-2.5 text-sm text-ink placeholder:text-muted-foreground/70 transition-colors focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-lime/60 ${icon ? "pl-10" : ""} ${error ? "border-red" : "border-line"} ${className}`}
           {...rest}
         />
       </span>
@@ -166,12 +166,12 @@ export function Skeleton({ className = "" }: { className?: string }) {
 
 // ---------- EmptyState ----------
 export function EmptyState({
-  illustration, title, body, action,
-}: { illustration: React.ReactNode; title: string; body?: string; action?: React.ReactNode }) {
+  illustration, title, body, action, titleClassName = "font-hand",
+}: { illustration: React.ReactNode; title: string; body?: string; action?: React.ReactNode; titleClassName?: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="text-[76px] leading-none text-ink/80">{illustration}</div>
-      <h3 className="font-hand mt-4 text-2xl">{title}</h3>
+      <h3 className={`${titleClassName} mt-4 text-2xl`}>{title}</h3>
       {body && <p className="mt-1 max-w-sm text-sm text-muted">{body}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
