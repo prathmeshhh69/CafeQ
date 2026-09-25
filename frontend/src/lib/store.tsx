@@ -15,7 +15,9 @@ interface Store {
   user: AuthUser | null;
   authLoading: boolean;
   login: (credentials: { email?: string; phone?: string; password: string }) => Promise<AuthUser>;
-  register: (details: { name: string; email: string; phone: string; password: string }) => Promise<AuthUser>;
+  register: (details: { name: string; email: string; phone: string; password: string }) => Promise<void>;
+  verifyOtp: (details: { email: string; otp: string }) => Promise<AuthUser>;
+  resendOtp: (details: { email: string }) => Promise<void>;
   logout: () => Promise<void>;
   // cart
   cart: CartLine[];
@@ -87,9 +89,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return user;
   }, []);
   const register = useCallback(async (details: { name: string; email: string; phone: string; password: string }) => {
-    const { user } = await authApi.register(details);
+    await authApi.register(details);
+  }, []);
+  const verifyOtp = useCallback(async (details: { email: string; otp: string }) => {
+    const { user } = await authApi.verifyOtp(details);
     setUser(user);
     return user;
+  }, []);
+  const resendOtp = useCallback(async (details: { email: string }) => {
+    await authApi.resendOtp(details);
   }, []);
   const logout = useCallback(async () => {
     await authApi.logout();
@@ -192,7 +200,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value: Store = {
-    user, authLoading, login, register, logout,
+    user, authLoading, login, register, verifyOtp, resendOtp, logout,
     cart, cartLoading, cartBusy, cartError, reloadCart, add, setQty, remove, clear, qtyOf, subtotal, cartCount,
     orders, ordersLoading, ordersError, reloadOrders, loadOrder, cancelOrder, addOrder, setOrderStatus,
     toasts, toast, dismissToast,
