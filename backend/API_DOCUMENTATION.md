@@ -83,7 +83,16 @@ Resend requests have a 60-second cooldown.
   }
 }
 ```
-Unverified users receive `403 Forbidden` with `Please verify your email before logging in.`
+Invalid passwords continue to receive `400 Bad Request` with `Invalid Password`. After valid credentials are confirmed, unverified users receive `403 Forbidden`:
+```json
+{
+  "success": false,
+  "code": "ACCOUNT_NOT_VERIFIED",
+  "message": "Please verify your account before logging in.",
+  "email": "user@example.com"
+}
+```
+Use the returned email with the existing `POST /api/auth/verify-otp` endpoint. If the OTP has expired, use `POST /api/auth/resend-otp`; its existing 60-second cooldown and verification attempt limit remain in effect.
 
 ### Logout
 **Method and URL:** `POST /api/auth/logout`

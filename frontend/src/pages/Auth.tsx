@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Mail, Lock, Eye, EyeOff, User, Phone } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowLeft } from "lucide-react";
 import { Button, Input } from "../components/ui";
 import { Logo } from "../components/nav";
 import { CupDoodle, Star, Sparkle, Heart, Arrow, PlateDoodle } from "../components/Doodles";
 import { useStore } from "../lib/store";
+import { ApiError } from "../lib/api";
 
 function PasswordInput({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
   const [show, setShow] = useState(false);
@@ -50,8 +51,19 @@ function BrandPanel({ headline }: { headline: string }) {
 }
 
 export function LoginPage({ go }: { go: (r: string) => void }) {
-  const { login, toast } = useStore();
+  const { login, verifyOtp, resendOtp, toast } = useStore();
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setTimeout(() => setCooldown((remaining) => remaining - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldown]);
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -63,10 +75,53 @@ export function LoginPage({ go }: { go: (r: string) => void }) {
       toast("Welcome back to CafeQ!");
       go(user.role === "ADMIN" ? "admin" : "menu");
     } catch (error) {
+      if (error instanceof ApiError && error.code === "ACCOUNT_NOT_VERIFIED" && error.email) {
+        setVerificationEmail(error.email);
+        setOtp("");
+        setErrorMessage("");
+        setCooldown(0);
+        toast("Your account needs verification. Enter the code sent to your email.", "info");
+        return;
+      }
       toast(error instanceof Error ? error.message : "Could not log in.", "error");
     } finally {
       setLoading(false);
     }
+  };
+  const submitOtp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      const user = await verifyOtp({ email: verificationEmail, otp });
+      toast("Email verified. Welcome to CafeQ!");
+      go(user.role === "ADMIN" ? "admin" : "menu");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Could not verify your email.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const resend = async () => {
+    setResending(true);
+    setErrorMessage("");
+    try {
+      await resendOtp({ email: verificationEmail });
+      setCooldown(60);
+      setOtp("");
+      toast("A new verification code has been sent.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Could not resend the verification code.");
+      if (error instanceof ApiError && error.status === 429) setCooldown(60);
+    } finally {
+      setResending(false);
+    }
+  };
+  const backToLogin = () => {
+    setVerificationEmail("");
+    setOtp("");
+    setErrorMessage("");
+    setCooldown(0);
   };
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
@@ -74,6 +129,23 @@ export function LoginPage({ go }: { go: (r: string) => void }) {
       <div className="flex flex-col justify-center px-6 py-10 sm:px-12">
         <div className="mx-auto w-full max-w-sm">
           <div className="lg:hidden"><Logo /></div>
+          {verificationEmail ? <>
+            <button type="button" onClick={backToLogin} className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-muted hover:text-ink">
+              <ArrowLeft className="h-4 w-4" /> Back to login
+            </button>
+            <h1 className="mt-2 font-hand text-4xl lg:mt-0">Your account needs verification</h1>
+            <p className="mt-2 text-sm text-muted">Enter the 6-digit code sent to <span className="font-semibold text-ink">{verificationEmail}</span> to continue to CafeQ.</p>
+            <form onSubmit={submitOtp} className="mt-8 space-y-4">
+              <Input name="otp" label="6-digit verification code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="123456" required />
+              {errorMessage && <p role="alert" className="text-sm text-red">{errorMessage}</p>}
+              <Button type="submit" size="lg" block loading={loading} disabled={otp.length !== 6}>Verify account</Button>
+            </form>
+            <div className="mt-4 text-center">
+              <Button type="button" variant="ghost" loading={resending} disabled={cooldown > 0 || loading} onClick={resend}>
+                {cooldown > 0 ? "Resend code in " + cooldown + "s" : "Resend OTP"}
+              </Button>
+            </div>
+          </> : <>
           <div className="mt-8 flex items-center gap-2 lg:mt-0">
             <h1 className="font-hand text-4xl">Welcome back!</h1>
             <Arrow className="text-2xl text-orange" />
@@ -88,6 +160,7 @@ export function LoginPage({ go }: { go: (r: string) => void }) {
             New here?{" "}
             <button onClick={() => go("register")} className="font-semibold text-ink underline decoration-lime-deep decoration-2 underline-offset-2 hover:text-orange">Create an account</button>
           </p>
+          </>}
         </div>
       </div>
     </div>

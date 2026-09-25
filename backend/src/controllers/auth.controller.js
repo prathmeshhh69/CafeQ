@@ -168,12 +168,17 @@ async function loginUser(req,res){
     if(!user){
         return res.status(400).json({message:'User does not exist'})
     }
-    if(!user.isVerified){
-        return res.status(403).json({message:'Please verify your email before logging in.'})
-    }
     const isPasswordValid=await bcrypt.compare(password,user.password)
     if(!isPasswordValid){
         return res.status(400).json({message:'Invalid Password'})
+    }
+    if(!user.isVerified){
+        return res.status(403).json({
+            success:false,
+            code:'ACCOUNT_NOT_VERIFIED',
+            message:'Please verify your account before logging in.',
+            email:user.email
+        })
     }
 
     setAuthCookie(res,user)

@@ -1,7 +1,7 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 
 export class ApiError extends Error {
-  constructor(message: string, readonly status: number) {
+  constructor(message: string, readonly status: number, readonly code?: string, readonly email?: string) {
     super(message);
     this.name = "ApiError";
   }
@@ -35,9 +35,14 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     if (response.status === 401 && !skipUnauthorizedHandler) unauthorizedHandler?.();
-    const backendMessage = payload && typeof payload === "object" && "message" in payload
-      && typeof payload.message === "string" ? payload.message : null;
-    throw new ApiError(backendMessage || `Request failed (${response.status}).`, response.status);
+    const errorPayload = payload && typeof payload === "object" ? payload as Record<string, unknown> : null;
+    const backendMessage = typeof errorPayload?.message === "string" ? errorPayload.message : null;
+    throw new ApiError(
+      backendMessage || `Request failed (${response.status}).`,
+      response.status,
+      typeof errorPayload?.code === "string" ? errorPayload.code : undefined,
+      typeof errorPayload?.email === "string" ? errorPayload.email : undefined,
+    );
   }
   return payload as T;
 }
