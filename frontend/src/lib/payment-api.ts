@@ -1,7 +1,7 @@
 import { apiRequest } from "./api";
 import type { AuthUser } from "./auth-api";
 
-interface PaymentOrder { orderId: string; amount: number; currency: string; }
+interface PaymentOrder { orderId: string; amount: number; currency: string; keyId: string; }
 interface CheckoutSuccess {
   razorpay_order_id: string;
   razorpay_payment_id: string;
@@ -46,8 +46,8 @@ export const paymentApi = {
     method: "POST", body: response,
   }),
   async open(order: PaymentOrder, user: AuthUser): Promise<CheckoutResult> {
-    const key = import.meta.env.VITE_RAZORPAY_KEY_ID;
-    if (!key) throw new Error("Online payment is not configured yet. Add the Razorpay key ID to the frontend environment.");
+    const key = order.keyId;
+    if (!key) throw new Error("Online payment is not configured on the server.");
     await loadCheckout();
     const Razorpay = window.Razorpay;
     if (!Razorpay) throw new Error("Razorpay Checkout did not load.");

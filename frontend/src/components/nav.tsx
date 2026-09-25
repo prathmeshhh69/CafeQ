@@ -6,11 +6,11 @@ import { CupDoodle } from "./Doodles";
 export function Logo({ onClick, size = "md" }: { onClick?: () => void; size?: "sm" | "md" }) {
   return (
     <button onClick={onClick} className="group inline-flex items-center gap-2" aria-label="CafeQ home">
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink text-lime ring-2 ring-red transition-transform group-hover:-rotate-6">
+      <span className="grid h-9 w-9 place-items-center rounded-xl border border-[#c6a875]/60 bg-[#33251c] text-[#e8bd72] ring-1 ring-[#8c6744]/70 transition-transform group-hover:-rotate-6">
         <CupDoodle className="text-[20px]" />
       </span>
       <span className={`font-hand font-bold tracking-tight ${size === "sm" ? "text-xl" : "text-2xl"}`}>
-        Cafe<span className="text-orange">Q</span>
+        <span className="text-[#fff4df]">Cafe</span><span className="text-[#e8bd72]">Q</span>
       </span>
     </button>
   );
@@ -35,14 +35,21 @@ export function Navbar({
     );
   };
   return (
-    <header className="sticky top-0 z-40 border-b border-red/30 bg-ink text-cream backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-4 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-[#8c6744]/60 bg-[#17120f] text-[#fff4df] shadow-[0_4px_18px_rgba(25,18,12,0.16)]">
+      <div className="pointer-events-none absolute inset-x-0 top-1 mx-auto hidden h-[calc(100%-8px)] max-w-[1320px] rounded-[18px] border border-[#c6a875]/35 md:block" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 hidden h-full overflow-hidden md:block">
+        <svg viewBox="0 0 120 28" className="absolute left-8 top-0 h-7 w-24 text-[#c6a875]/80" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"><path d="M1 2h30c8 0 8 10 1 10-5 0-5-7 0-7 8 0 8 16 18 16s10-15 19-15c7 0 7 9 1 9-4 0-4-6 0-6 7 0 7 10 18 10h30"/><path d="M8 6c8 0 8 15 16 15 5 0 6-4 9-7m37 4c8 0 8-14 16-14"/></svg>
+        <svg viewBox="0 0 120 28" className="absolute right-8 top-0 h-7 w-24 -scale-x-100 text-[#c6a875]/80" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"><path d="M1 2h30c8 0 8 10 1 10-5 0-5-7 0-7 8 0 8 16 18 16s10-15 19-15c7 0 7 9 1 9-4 0-4-6 0-6 7 0 7 10 18 10h30"/><path d="M8 6c8 0 8 15 16 15 5 0 6-4 9-7m37 4c8 0 8-14 16-14"/></svg>
+        <svg viewBox="0 0 160 20" className="absolute bottom-0 left-1/2 h-5 w-40 -translate-x-1/2 text-[#c6a875]/80" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"><path d="M1 2h48c9 0 8 13 0 13-6 0-6-8 0-8 7 0 9 10 17 10s10-13 14-13 6 9 0 9-6-9 0-9 7 13 15 13 10-10 17-10c6 0 6 8 0 8-8 0-9-13 0-13h47"/><path d="M74 2c-2 6 10 6 6 13m7-13c2 6-10 6-6 13"/></svg>
+      </div>
+      <div className="relative mx-auto flex h-16 max-w-[1280px] items-center gap-3 px-4 sm:px-6 md:h-[72px] md:gap-4">
         <Logo onClick={() => go("menu")} />
-        <nav className="ml-4 hidden items-center gap-1 md:flex">
+        <span className="hidden border-l border-[#c6a875]/40 pl-4 text-[10px] font-medium uppercase tracking-[0.16em] text-[#d4c2a4] lg:block">Curated coffee. Artisanal shawarma. Local bites.</span>
+        <nav className="ml-auto hidden items-center gap-1 md:flex">
           {link("menu", "Menu")}
           {link("orders", "My Orders")}
         </nav>
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 md:ml-2">
           <button onClick={onSearch} className="hidden h-10 w-10 place-items-center rounded-xl text-cream/70 hover:bg-white/10 hover:text-cream sm:grid" aria-label="Search menu">
             <Search className="h-5 w-5" />
           </button>

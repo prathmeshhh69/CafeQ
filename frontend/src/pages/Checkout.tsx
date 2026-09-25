@@ -62,7 +62,6 @@ export function CheckoutPage({ go, onPlaced }: { go: (r: string) => void; onPlac
     setAmountSnapshot((amount) => amount || subtotal);
     setPhase("processing");
     try {
-      if (!import.meta.env.VITE_RAZORPAY_KEY_ID) throw new Error("Online payment is not configured yet. Add the Razorpay key ID to the frontend environment.");
       if (orderIdRef.current) {
         const existing = await ordersApi.get(orderIdRef.current).catch(() => null);
         if (existing?.order.paymentStatus === "PAID") {

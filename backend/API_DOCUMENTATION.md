@@ -582,7 +582,8 @@ Use the returned email with the existing `POST /api/auth/verify-otp` endpoint. I
   "message": "Payment order created successfully",
   "orderId": "order_XXXXXX", // The Razorpay specific order ID
   "amount": 24000,           // Amount in paise
-  "currency": "INR"
+  "currency": "INR",
+  "keyId": "rzp_test_XXXXXX" // Public Razorpay key ID for Checkout
 }
 ```
 

@@ -44,6 +44,12 @@ async function createPaymentOrder(req, res) {
             });
         }
 
+        if (!process.env.RAZORPAY_KEY_ID) {
+            return res.status(503).json({
+                message: "Online payment is not configured on the server"
+            });
+        }
+
         // 6. Convert rupees to paise
         // Example: ₹620 -> 62000 paise
         const amountInPaise = Math.round(order.totalAmount * 100);
@@ -65,7 +71,8 @@ async function createPaymentOrder(req, res) {
             message: "Payment order created successfully",
             orderId: razorpayOrder.id,
             amount: razorpayOrder.amount,
-            currency: razorpayOrder.currency
+            currency: razorpayOrder.currency,
+            keyId: process.env.RAZORPAY_KEY_ID
         });
 
     } catch (error) {

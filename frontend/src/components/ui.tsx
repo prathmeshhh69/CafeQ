@@ -90,7 +90,7 @@ export function RatingInput({ value, onChange, size = 26 }: { value: number; onC
     <div className="inline-flex gap-1">
       {[1, 2, 3, 4, 5].map((n) => (
         <button key={n} type="button" onClick={() => onChange(n)} aria-label={`${n} star${n > 1 ? "s" : ""}`}
-          className="transition-transform hover:scale-110 active:scale-95">
+          className="rounded-md transition-transform hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b94b20] focus-visible:ring-offset-2">
           <StarIcon
             style={{ width: size, height: size }}
             className={n <= value ? "text-orange fill-orange" : "text-line"}

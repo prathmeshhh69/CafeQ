@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, X, Plus, Minus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X, Plus, Minus, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ImageWithFallback } from "../lib/ImageWithFallback";
 import { Button, Stars, EmptyState, Modal, QuantityStepper } from "../components/ui";
 import { FoodCard, FoodCardSkeleton, ReviewCard } from "../components/cards";
-import { Star, Sparkle, Heart, Arrow, CupDoodle, PlateDoodle } from "../components/Doodles";
+import { Star, Sparkle, CupDoodle, PlateDoodle, DoodleField, CafeBaristaDoodle } from "../components/Doodles";
 import { money, type Category, type MenuItem, type Review } from "../lib/data";
 import { asMenuItem, menuApi } from "../lib/menu-api";
 import { asReview, reviewsApi } from "../lib/reviews-api";
 import { useStore } from "../lib/store";
 import { landingImages } from "../lib/landing-images";
+import { HeroSection } from "../components/HeroSection";
 
 const PAGE_SIZE = 8;
 
@@ -27,14 +29,18 @@ export function MenuPage({ openItem }: { openItem: MenuItem | null | undefined }
   const [retry, setRetry] = useState(0);
   const [detail, setDetail] = useState<MenuItem | null>(openItem ?? null);
   const [activeSlide, setActiveSlide] = useState(0);
+  const reduceMotion = useReducedMotion();
+  const heroItems = featured.length ? featured : items.filter((item) => item.available).slice(0, 4);
+  const heroItem = heroItems.length ? heroItems[activeSlide % heroItems.length] : null;
 
   useEffect(() => {
-    if (landingImages.length < 2) return;
+    const count = heroItems.length || landingImages.length;
+    if (reduceMotion || count < 2) return;
     const timeout = window.setTimeout(() => {
-      setActiveSlide((current) => (current + 1) % landingImages.length);
+      setActiveSlide((current) => (current + 1) % count);
     }, 3500);
     return () => window.clearTimeout(timeout);
-  }, [activeSlide]);
+  }, [activeSlide, heroItems.length, reduceMotion]);
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedQuery(query.trim()), 250);
@@ -92,82 +98,35 @@ export function MenuPage({ openItem }: { openItem: MenuItem | null | undefined }
   const searching = query.trim().length > 0 || cat !== "All";
 
   const reset = () => { setQuery(""); setCat("All"); setPage(1); };
+  const showNextSlide = (direction: number) => {
+    const count = heroItems.length || landingImages.length;
+    if (count) setActiveSlide((current) => (current + direction + count) % count);
+  };
 
   return (
     <>
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-line">
-        <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-12 sm:px-6 md:grid-cols-2 md:py-16">
-          <div className="relative z-10">
-            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-muted">
-              <span className="h-1.5 w-1.5 rounded-full bg-green" /> Open · pickup from 12:00 PM
-            </span>
-            <h1 className="mt-4 font-hand text-5xl leading-[1.02] sm:text-6xl">
-              Hungry?<br />Let's fix that.
-            </h1>
-            <p className="mt-3 max-w-md text-lg text-muted">Fresh favourites, ready when you are — pre-order and skip the wait.</p>
-            <div className="mt-6 flex max-w-md items-center gap-2 rounded-2xl border border-line bg-surface p-1.5 shadow-[0_2px_0_#d8b8ad]">
-              <Search className="ml-2 h-5 w-5 flex-none text-muted" />
-              <input
-                value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-                placeholder="Search dishes, drinks, desserts…"
-                className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none placeholder:text-muted/70"
-              />
-              <Button onClick={() => document.getElementById("menu-grid")?.scrollIntoView({ behavior: "smooth" })}>Explore Menu</Button>
-            </div>
-          </div>
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-0 z-10 text-ink">
-              <Star className="absolute -left-2 top-4 text-[28px] text-orange -rotate-12" />
-              <Sparkle className="absolute right-6 top-0 text-[34px] text-lime-deep" />
-              <Heart className="absolute -right-1 bottom-16 text-[26px] text-red" />
-              <Arrow className="absolute -bottom-2 left-10 text-[40px] text-ink" />
-            </div>
-            <div
-              role="region"
-              aria-roledescription="carousel"
-              aria-label="Food highlights"
-              className="relative mx-auto aspect-square max-w-md overflow-hidden rounded-[2.5rem] border-2 border-ink bg-cream shadow-[8px_8px_0_#19151b]"
-            >
-              {landingImages.map((slide, index) => (
-                <div
-                  key={slide.name}
-                  aria-hidden={index !== activeSlide}
-                  className={`absolute inset-0 transition-opacity duration-700 motion-reduce:transition-none ${index === activeSlide ? "opacity-100" : "opacity-0"}`}
-                >
-                  <ImageWithFallback
-                    src={slide.src}
-                    alt={index === activeSlide ? slide.name : ""}
-                    category={slide.name.includes("Lassi") ? "Lassi" : undefined}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              ))}
-              {landingImages.length > 0 && (
-                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-ink/75 via-ink/25 to-transparent px-6 pb-6 pt-20 text-white">
-                  <p className="text-xl font-bold drop-shadow-sm sm:text-2xl">{landingImages[activeSlide].name}</p>
-                  <div className="flex gap-1.5" aria-label="Choose a food image">
-                    {landingImages.map((slide, index) => (
-                      <button
-                        key={slide.name}
-                        type="button"
-                        aria-label={`Show ${slide.name}`}
-                        aria-pressed={index === activeSlide}
-                        onClick={() => setActiveSlide(index)}
-                        className={`h-2.5 rounded-full transition-all ${index === activeSlide ? "w-6 bg-white" : "w-2.5 bg-white/60 hover:bg-white"}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="absolute -bottom-4 -left-2 flex items-center gap-2 rounded-2xl border border-line bg-surface px-3 py-2 shadow-lg">
-              <CupDoodle className="text-[28px]" />
-              <div className="text-xs"><p className="font-bold">Made fresh</p><p className="text-muted">ready for pickup</p></div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* High-Energy Vibrant Cafe Hero */}
+      <HeroSection
+        query={query}
+        setQuery={setQuery}
+        onSearchSubmit={() => {
+          setPage(1);
+          document.getElementById("menu-grid")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+        }}
+        onSelectCategory={(selectedCat) => {
+          setCat(selectedCat as Category | "All");
+          setPage(1);
+          document.getElementById("menu-grid")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+        }}
+        heroItems={heroItems}
+        heroItem={heroItem}
+        landingImages={landingImages}
+        activeSlide={activeSlide}
+        setActiveSlide={setActiveSlide}
+        onOpenDetail={setDetail}
+        reduceMotion={reduceMotion}
+        allItems={items}
+      />
 
       <div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6">
         {/* Category pills */}
@@ -176,7 +135,7 @@ export function MenuPage({ openItem }: { openItem: MenuItem | null | undefined }
             const active = cat === c;
             return (
               <button key={c} onClick={() => { setCat(c as Category | "All"); setPage(1); }}
-                className={`flex-none rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${active ? "border-lime-deep bg-lime text-ink" : "border-line bg-surface text-muted hover:text-ink"}`}>
+                className={`flex-none rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${active ? "border-[#8d3519] bg-[#b94b20] text-[#fff8eb] shadow-[0_2px_0_#76351d]" : "border-[#d2bea0] bg-[#fffaf0] text-[#514334] hover:border-[#b94b20] hover:text-[#873918]"}`}>
                 {c}
               </button>
             );
@@ -187,15 +146,15 @@ export function MenuPage({ openItem }: { openItem: MenuItem | null | undefined }
         {!searching && (
           <section className="mt-10">
             <div className="flex items-end justify-between">
-              <h2 className="font-hand text-3xl">Today's Picks</h2>
+              <div><p className="text-xs font-bold uppercase tracking-[0.19em] text-[#98512e]">Made for today</p><h2 className="mt-1 font-hand text-4xl text-[#211912]">Daily Features</h2></div>
               <span className="hidden text-sm text-muted sm:block">Fresh from the menu ✦</span>
             </div>
             {loading ? (
-              <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
                 {Array.from({ length: 4 }).map((_, i) => <FoodCardSkeleton key={i} />)}
               </div>
             ) : featured.length > 0 ? (
-              <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
                 {featured.map((m) => <FoodCard key={m.id} item={m} onOpen={setDetail} />)}
               </div>
             ) : null}
