@@ -9,6 +9,7 @@ const paymentRoutes=require('./routes/payment.routes')
 const reviewRoutes=require('./routes/review.routes')
 const recommendationRoutes=require('./routes/recommendation.routes')
 const adminRoutes=require('./routes/admin.routes')
+const aiRoutes=require('./routes/ai.routes')
 const cookieParser=require('cookie-parser')
 const cors=require('cors');
 const app=express();
@@ -34,5 +35,6 @@ app.use('/api/payment',paymentRoutes)
 app.use('/api/reviews', reviewRoutes)
 app.use('/api/recommendations', recommendationRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/ai/food-assistant', aiRoutes)
 
 module.exports=app;
