@@ -20,6 +20,8 @@ export const authApi = {
     apiRequest<{ message: string }>("/api/auth/resend-otp", { method: "POST", body: details }),
   login: (credentials: { email?: string; phone?: string; password: string }) =>
     apiRequest<AuthResponse>("/api/auth/login", { method: "POST", body: credentials }),
+  googleLogin: (credential: string) =>
+    apiRequest<AuthResponse>("/api/auth/google", { method: "POST", body: { credential } }),
   logout: () => apiRequest<{ message: string }>("/api/auth/logout", { method: "POST" }),
   me: () => apiRequest<AuthResponse>("/api/auth/me", { skipUnauthorizedHandler: true }),
 };

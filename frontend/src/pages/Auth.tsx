@@ -6,6 +6,7 @@ import { Logo } from "../components/nav";
 import { CupDoodle, Star, Sparkle, Heart, PlateDoodle } from "../components/Doodles";
 import { useStore } from "../lib/store";
 import { ApiError } from "../lib/api";
+import { GoogleLogin } from "@react-oauth/google";
 
 const panelVariants: Variants = {
   hidden: { opacity: 0, x: -16 },
@@ -137,7 +138,7 @@ function AuthFrame({ headline, mode, children }: { headline: string; mode: "logi
 }
 
 export function LoginPage({ go }: { go: (r: string) => void }) {
-  const { login, verifyOtp, resendOtp, toast } = useStore();
+  const { login, loginWithGoogle, verifyOtp, resendOtp, toast } = useStore();
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
@@ -188,6 +189,27 @@ export function LoginPage({ go }: { go: (r: string) => void }) {
     finally { setResending(false); }
   };
   const backToLogin = () => { setVerificationEmail(""); setOtp(""); setErrorMessage(""); setCooldown(0); };
+
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
+    if (!credentialResponse.credential) {
+      toast("Google login failed. No credential received.", "error");
+      return;
+    }
+    setLoading(true);
+    try {
+      const user = await loginWithGoogle(credentialResponse.credential);
+      toast("Welcome to CafeQ!");
+      go(user.role === "ADMIN" ? "admin" : "menu");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Google login failed. Please try again.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    toast("Google authentication encountered an error. Please try again.", "error");
+  };
   return (
     <AuthFrame headline={"Good food.\nBetter moods."} mode="login">
       {verificationEmail ? <>
@@ -214,6 +236,23 @@ export function LoginPage({ go }: { go: (r: string) => void }) {
           <motion.div variants={formItemVariants}><PasswordInput name="password" label="Password" placeholder="Enter your password" autoComplete="current-password" required /></motion.div>
           <motion.div variants={formItemVariants} whileHover={loading ? undefined : { y: -2 }} whileTap={loading ? undefined : { scale: 0.99 }} animate={{ opacity: loading ? 0.84 : 1 }} transition={{ duration: 0.16 }}><Button type="submit" size="lg" block loading={loading} className="auth-primary !mt-7 !py-3.5">Log In <ArrowRight className="h-4 w-4" /></Button></motion.div>
         </form>
+        <motion.div variants={formItemVariants} className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-line" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted">or continue with</span>
+          <div className="h-px flex-1 bg-line" />
+        </motion.div>
+        <motion.div variants={formItemVariants} className="w-full flex justify-center [&>div]:w-full [&_iframe]:!w-full [&_iframe]:!max-w-none transition-all duration-200 hover:shadow-md rounded-xl overflow-hidden">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="outline"
+            shape="rectangular"
+            size="large"
+            width="100%"
+            text="continue_with"
+            locale="en"
+          />
+        </motion.div>
         <motion.p variants={formItemVariants} className="mt-7 text-center text-sm text-muted">New here? <button type="button" onClick={() => go("register")} className="auth-link font-semibold text-ink underline decoration-orange/60 decoration-2 underline-offset-4 hover:text-orange">Create an account</button></motion.p>
       </>}
     </AuthFrame>

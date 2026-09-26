@@ -15,6 +15,7 @@ interface Store {
   user: AuthUser | null;
   authLoading: boolean;
   login: (credentials: { email?: string; phone?: string; password: string }) => Promise<AuthUser>;
+  loginWithGoogle: (credential: string) => Promise<AuthUser>;
   register: (details: { name: string; email: string; phone: string; password: string }) => Promise<void>;
   verifyOtp: (details: { email: string; otp: string }) => Promise<AuthUser>;
   resendOtp: (details: { email: string }) => Promise<void>;
@@ -85,6 +86,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (credentials: { email?: string; phone?: string; password: string }) => {
     const { user } = await authApi.login(credentials);
+    setUser(user);
+    return user;
+  }, []);
+  const loginWithGoogle = useCallback(async (credential: string) => {
+    const { user } = await authApi.googleLogin(credential);
     setUser(user);
     return user;
   }, []);
@@ -200,7 +206,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value: Store = {
-    user, authLoading, login, register, verifyOtp, resendOtp, logout,
+    user, authLoading, login, loginWithGoogle, register, verifyOtp, resendOtp, logout,
     cart, cartLoading, cartBusy, cartError, reloadCart, add, setQty, remove, clear, qtyOf, subtotal, cartCount,
     orders, ordersLoading, ordersError, reloadOrders, loadOrder, cancelOrder, addOrder, setOrderStatus,
     toasts, toast, dismissToast,

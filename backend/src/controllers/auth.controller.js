@@ -2,7 +2,10 @@ const userModel=require('../models/user.model')
 const jwt=require('jsonwebtoken')
 const bcrypt=require('bcrypt')
 const crypto=require('crypto')
+const { OAuth2Client } = require('google-auth-library')
 const {sendEmail}=require('../services/email.service')
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_AUTH_CLIENT_ID)
 
 const OTP_EXPIRY_MINUTES=10
 const OTP_MAX_ATTEMPTS=5
@@ -204,4 +207,50 @@ async function getMe(req,res){
     })
 }
 
-module.exports={registerUser,verifyOtp,resendOtp,loginUser,logoutUser,getMe}
+async function googleLogin(req, res) {
+    try {
+        const { credential } = req.body || {};
+        if (!credential) {
+            return res.status(400).json({ message: 'Google credential is required' });
+        }
+
+        const googleClientId = process.env.GOOGLE_AUTH_CLIENT_ID || process.env.GOOGLE_AUTHCLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: googleClientId
+        });
+
+        const payload = ticket.getPayload();
+        if (!payload || !payload.email) {
+            return res.status(400).json({ message: 'Invalid Google credential' });
+        }
+
+        const normalizedEmail = payload.email.trim().toLowerCase();
+        let user = await userModel.findOne({ email: normalizedEmail });
+
+        if (!user) {
+            user = await userModel.create({
+                name: payload.name || payload.email.split('@')[0],
+                email: normalizedEmail,
+                role: 'CUSTOMER',
+                isVerified: true
+            });
+        } else {
+            if (!user.isVerified) {
+                user.isVerified = true;
+                await user.save();
+            }
+        }
+
+        setAuthCookie(res, user);
+        return res.status(200).json({
+            message: 'User logged in successfully',
+            user: userResponse(user)
+        });
+    } catch (error) {
+        console.error('Google authentication error:', error);
+        return res.status(401).json({ message: 'Invalid or expired Google token' });
+    }
+}
+
+module.exports={registerUser,verifyOtp,resendOtp,loginUser,logoutUser,getMe,googleLogin}
