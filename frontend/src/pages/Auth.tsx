@@ -250,7 +250,6 @@ export function LoginPage({ go }: { go: (r: string) => void }) {
             size="large"
             width="100%"
             text="continue_with"
-            locale="en"
           />
         </motion.div>
         <motion.p variants={formItemVariants} className="mt-7 text-center text-sm text-muted">New here? <button type="button" onClick={() => go("register")} className="auth-link font-semibold text-ink underline decoration-orange/60 decoration-2 underline-offset-4 hover:text-orange">Create an account</button></motion.p>

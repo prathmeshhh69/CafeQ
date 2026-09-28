@@ -734,6 +734,41 @@ Use the returned email with the existing `POST /api/auth/verify-otp` endpoint. I
 
 ---
 
+## AI Food Assistant
+
+### Request Menu Recommendations
+**Method and URL:** `POST /api/ai/food-assistant`
+**Authentication:** Authenticated user
+**Request Body:**
+```json
+{
+  "message": "Suggest a vegetarian item under ₹120"
+}
+```
+
+The message must contain between 1 and 500 characters. The assistant recommends only currently available menu items and validates returned IDs and extracted price, diet, and category constraints against the database.
+
+**Success Response:** `200 OK`
+```json
+{
+  "message": "Here are a few vegetarian options within your budget.",
+  "recommendations": [
+    {
+      "menuItemId": "64c...",
+      "name": "Paneer Shawarma",
+      "category": "Shawarma - Veg",
+      "price": 100,
+      "availability": true,
+      "reason": "A vegetarian shawarma within your budget."
+    }
+  ]
+}
+```
+
+The endpoint requires `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` in `backend/.env`. Without them, it returns a server error while the rest of the application remains available.
+
+---
+
 ## Inventory
 
 ### Admin

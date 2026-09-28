@@ -44,7 +44,17 @@ async function foodAssistant(req, res) {
             });
         }
 
-        const menuItems = await menuModel.find({ isAvailable: true }).lean();
+        const customerMessage = message.trim();
+        if (customerMessage.length > 500) {
+            return res.status(400).json({
+                message: 'Message must be 500 characters or fewer.'
+            });
+        }
+
+        const menuItems = await menuModel
+            .find({ isAvailable: true })
+            .select('_id name category price isAvailable')
+            .lean();
 
         const availableMenuItems = menuItems.map(item => ({
             menuItemId: item._id.toString(),
@@ -55,8 +65,8 @@ async function foodAssistant(req, res) {
         }));
 
         const result = await getFoodRecommendations({
-            customerMessage: message.trim(),
-            availableMenuItems,
+            customerMessage,
+            availableMenuItems: availableMenuItems.map(({ availability, ...item }) => item),
             aprioriRecommendations: []
         });
 

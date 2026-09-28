@@ -558,7 +558,7 @@ export function HeroSection({
             )}
 
             {/* Interactive Cafe Barista Mascot with Speech Bubble */}
-            <div className="absolute -bottom-8 -right-4 z-20 hidden sm:block lg:-right-10">
+            <div className="absolute -bottom-8 z-20 hidden sm:-right-24 sm:block lg:-right-28 xl:-right-32">
               {/* Dynamic Speech Bubble */}
               <motion.div
                 className="absolute -top-14 right-4 z-30 max-w-[210px] cursor-pointer rounded-2xl border-2 border-[#5b3526] bg-[#fffdfa] p-2.5 shadow-[0_6px_14px_rgba(40,25,15,0.18)]"

@@ -39,7 +39,11 @@ JWT_SECRET=a-long-random-secret
 RAZORPAY_KEY_ID=your-razorpay-key-id
 RAZORPAY_KEY_SECRET=your-razorpay-key-secret
 FRONTEND_ORIGIN=http://localhost:8443
+OPENROUTER_API_KEY=your-openrouter-api-key
+OPENROUTER_MODEL=openrouter/free
 ```
+
+The customer chatbot appears without these OpenRouter values, but its requests will show an unavailable message until both values are configured. The rest of CafeQ can run without AI credentials.
 
 Create the frontend environment file.
 

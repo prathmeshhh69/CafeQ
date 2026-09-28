@@ -9,6 +9,7 @@ import { CheckoutPage } from "./pages/Checkout";
 import { ConfirmationPage } from "./pages/Confirmation";
 import { OrdersPage, OrderDetailPage, AccountPage } from "./pages/Orders";
 import { AdminApp } from "./pages/Admin";
+import { Chatbot } from "./components/Chatbot";
 import type { Order } from "./lib/data";
 
 type Route =
@@ -79,6 +80,7 @@ function Shell() {
       {allowedRoute === "orders" && <OrdersPage go={go} />}
       {allowedRoute === "order" && orderId && <OrderDetailPage id={orderId} go={go} />}
       {allowedRoute === "account" && <AccountPage go={go} />}
+      <Chatbot />
       <MobileBottomNav route={allowedRoute} go={go} />
       <Toaster />
     </div>
