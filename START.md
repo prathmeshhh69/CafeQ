@@ -39,11 +39,12 @@ JWT_SECRET=a-long-random-secret
 RAZORPAY_KEY_ID=your-razorpay-key-id
 RAZORPAY_KEY_SECRET=your-razorpay-key-secret
 FRONTEND_ORIGIN=http://localhost:8443
-OPENROUTER_API_KEY=your-openrouter-api-key
-OPENROUTER_MODEL=openrouter/free
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_FALLBACK_MODEL=gemini-3.5-flash-lite
 ```
 
-The customer chatbot appears without these OpenRouter values, but its requests will show an unavailable message until both values are configured. The rest of CafeQ can run without AI credentials.
+The customer chatbot appears without these Gemini values, but its requests will show an unavailable message until `GEMINI_API_KEY` and `GEMINI_MODEL` are configured. On temporary Gemini overload or rate-limit errors, the backend retries briefly and then tries `GEMINI_FALLBACK_MODEL` if configured. The rest of CafeQ can run without AI credentials.
 
 Create the frontend environment file.
 

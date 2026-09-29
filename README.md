@@ -2,7 +2,7 @@
 
 CafeQ has a React 19, TypeScript, Vite, and Tailwind frontend in `frontend/` and an Express backend in `backend/`. The frontend uses the backend routes documented in [backend/API_DOCUMENTATION.md](backend/API_DOCUMENTATION.md). Its browser requests include the JWT cookie.
 
-For local development, install each project's dependencies and start the backend on port 5000 and the frontend on port 8443. The backend needs `MONGO_URI`, `JWT_SECRET`, `RAZORPAY_KEY_ID`, and `RAZORPAY_KEY_SECRET` in `backend/.env`. Set `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` to enable the customer food-assistant chatbot. Order creation uses a MongoDB transaction, so the MongoDB deployment must support transactions.
+For local development, install each project's dependencies and start the backend on port 5000 and the frontend on port 8443. The backend needs `MONGO_URI`, `JWT_SECRET`, `RAZORPAY_KEY_ID`, and `RAZORPAY_KEY_SECRET` in `backend/.env`. Set `GEMINI_API_KEY` and `GEMINI_MODEL` to enable the customer food-assistant chatbot. Order creation uses a MongoDB transaction, so the MongoDB deployment must support transactions.
 
 Copy `backend/.env.example` to `backend/.env` and `frontend/.env.example` to `frontend/.env`. `VITE_API_BASE_URL` defaults to `http://localhost:5000`; set `VITE_RAZORPAY_KEY_ID` to the public key ID that matches the backend Razorpay account before testing payments. Keep the Razorpay secret only in the backend. For a frontend served from a different origin, set backend `FRONTEND_ORIGIN` to that exact origin; localhost ports 5173 and 8443 are accepted by default.
 

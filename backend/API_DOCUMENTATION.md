@@ -765,7 +765,7 @@ The message must contain between 1 and 500 characters. The assistant recommends 
 }
 ```
 
-The endpoint requires `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` in `backend/.env`. Without them, it returns a server error while the rest of the application remains available.
+The endpoint requires `GEMINI_API_KEY` and `GEMINI_MODEL` in `backend/.env`. `GEMINI_FALLBACK_MODEL` is optional and is tried after brief retries for temporary Gemini overload or rate-limit errors. Without the required values, it returns a server error while the rest of the application remains available.
 
 ---
 
