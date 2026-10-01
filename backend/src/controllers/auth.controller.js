@@ -33,7 +33,8 @@ function userResponse(user){
         name:user.name,
         email:user.email,
         phone:user.phone,
-        role:user.role
+        role:user.role,
+        customerCode:user.customerCode
     }
 }
 
@@ -202,7 +203,8 @@ async function getMe(req,res){
             email:req.user.email,
             phone:req.user.phone,
             role:req.user.role,
-            isVerified:req.user.isVerified
+            isVerified:req.user.isVerified,
+            customerCode:req.user.customerCode
         }
     })
 }

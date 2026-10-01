@@ -453,6 +453,131 @@ async function updateOrderStatus(req, res) {
     }
 }
 
+async function verifyPickup(req, res) {
+    try {
+        const { pickupCode } = req.body || {};
+
+        if (typeof pickupCode !== 'string' || pickupCode.trim().length === 0) {
+            return res.status(400).json({
+                message: "Pickup code is required and must be a string"
+            });
+        }
+
+        const order = await orderModel.findOne({ pickupCode: pickupCode.trim() })
+            .populate('user', 'name customerCode');
+
+        if (!order) {
+            return res.status(404).json({
+                message: "Order not found for the provided pickup code"
+            });
+        }
+
+        if (order.orderStatus !== 'READY') {
+            const message = ['PENDING', 'CONFIRMED', 'PREPARING'].includes(order.orderStatus)
+                ? `Order is not ready for pickup. Current status is '${order.orderStatus}'`
+                : `Order is not valid for pickup. Current status is '${order.orderStatus}'`;
+            return res.status(400).json({ message });
+        }
+
+        if (order.pickupStatus !== 'NOT_PICKED_UP') {
+            return res.status(400).json({
+                message: "Order has already been picked up or is not available for pickup"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Pickup code verified successfully",
+            order: {
+                _id: order._id,
+                customerName: order.user?.name,
+                customerCode: order.user?.customerCode,
+                items: order.items,
+                totalAmount: order.totalAmount,
+                orderStatus: order.orderStatus,
+                pickupStatus: order.pickupStatus,
+                pickupCode: order.pickupCode
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+}
+
+async function markPickedUp(req, res) {
+    try {
+        const { pickupCode } = req.body || {};
+
+        if (typeof pickupCode !== 'string' || pickupCode.trim().length === 0) {
+            return res.status(400).json({
+                message: "Pickup code is required and must be a non-empty string"
+            });
+        }
+
+        const normalizedPickupCode = pickupCode.trim();
+        const pickedUpAt = new Date();
+        const order = await orderModel.findOneAndUpdate(
+            {
+                pickupCode: normalizedPickupCode,
+                orderStatus: 'READY',
+                pickupStatus: 'NOT_PICKED_UP'
+            },
+            {
+                $set: {
+                    pickupStatus: 'PICKED_UP',
+                    pickedUpAt
+                }
+            },
+            { new: true, runValidators: true }
+        ).populate('user', 'name customerCode');
+
+        if (!order) {
+            const existingOrder = await orderModel.findOne({ pickupCode: normalizedPickupCode });
+
+            if (!existingOrder) {
+                return res.status(404).json({
+                    message: "Order not found for the provided pickup code"
+                });
+            }
+
+            if (existingOrder.orderStatus !== 'READY') {
+                return res.status(400).json({
+                    message: `Order is not ready for pickup. Current status is '${existingOrder.orderStatus}'`
+                });
+            }
+
+            if (existingOrder.pickupStatus === 'PICKED_UP') {
+                return res.status(400).json({
+                    message: "Order has already been picked up"
+                });
+            }
+
+            return res.status(400).json({
+                message: "Order is not available for pickup"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Order marked as picked up successfully",
+            order: {
+                _id: order._id,
+                pickupCode: order.pickupCode,
+                customerName: order.user?.name,
+                customerCode: order.user?.customerCode,
+                pickupStatus: order.pickupStatus,
+                pickedUpAt: order.pickedUpAt
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+}
+
 module.exports = {
     createOrder,
     getOrders,
@@ -460,5 +585,7 @@ module.exports = {
     cancelOrder,
     getAllOrders,
     getOrderByIdAdmin,
-    updateOrderStatus
+    updateOrderStatus,
+    verifyPickup,
+    markPickedUp
 };

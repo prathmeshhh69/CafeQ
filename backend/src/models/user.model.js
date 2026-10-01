@@ -1,4 +1,5 @@
 const mongoose=require('mongoose')
+const { generateUniqueCode } = require('../utils/code.util');
 
 const userSchema=new mongoose.Schema({
     name:{
@@ -22,6 +23,10 @@ const userSchema=new mongoose.Schema({
         enum:['CUSTOMER','ADMIN'],
         default:'CUSTOMER'
     },
+    customerCode:{
+        type:String,
+        required:function(){ return this.role === 'CUSTOMER'; }
+    },
     isVerified:{
         type:Boolean,
         default:false
@@ -40,6 +45,21 @@ const userSchema=new mongoose.Schema({
         default:0
     }
 }, {timestamps:true})
+
+userSchema.index(
+    { customerCode: 1 },
+    { unique: true, partialFilterExpression: { customerCode: { $type: 'string' } } }
+);
+
+userSchema.pre('validate', async function(){
+    if (this.role === 'CUSTOMER' && !this.customerCode) {
+        this.customerCode = await generateUniqueCode(
+            mongoose.model('user'),
+            'customerCode',
+            code => `CFA-${code}`
+        );
+    }
+});
 
 const userModel=mongoose.model('user', userSchema);
 

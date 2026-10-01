@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { generateUniqueCode } = require('../utils/code.util');
 
 const orderItemSchema = new mongoose.Schema({
   menuItem: {
@@ -44,6 +45,19 @@ const orderSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  pickupCode: {
+    type: String
+  },
+  pickupStatus: {
+    type: String,
+    enum: ['NOT_PICKED_UP', 'PICKED_UP'],
+    default: 'NOT_PICKED_UP',
+    required: true
+  },
+  pickedUpAt: {
+    type: Date,
+    default: null
+  },
   orderStatus: {
     type: String,
     enum: ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'],
@@ -65,6 +79,21 @@ const orderSchema = new mongoose.Schema({
     default: null
   }
 }, { timestamps: true });
+
+orderSchema.index(
+  { pickupCode: 1 },
+  { unique: true, partialFilterExpression: { pickupCode: { $type: 'string' } } }
+);
+
+orderSchema.pre('validate', async function(){
+  if (!this.pickupCode) {
+    this.pickupCode = await generateUniqueCode(
+      mongoose.model('Order'),
+      'pickupCode',
+      code => `P${code}`
+    );
+  }
+});
 
 const orderModel = mongoose.model('Order', orderSchema);
 
