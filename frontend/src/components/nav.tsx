@@ -5,7 +5,7 @@ import { CupDoodle } from "./Doodles";
 
 export function Logo({ onClick, size = "md" }: { onClick?: () => void; size?: "sm" | "md" }) {
   return (
-    <button onClick={onClick} className="group inline-flex items-center gap-2" aria-label="CafeQ home">
+    <button onClick={onClick} className="group inline-flex shrink-0 items-center gap-2" aria-label="CafeQ home">
       <span className="grid h-9 w-9 place-items-center rounded-xl border border-[#c6a875]/60 bg-[#33251c] text-[#e8bd72] ring-1 ring-[#8c6744]/70 transition-transform group-hover:-rotate-6">
         <CupDoodle className="text-[20px]" />
       </span>
@@ -49,7 +49,7 @@ export function Navbar({
           {link("menu", "Menu")}
           {link("orders", "My Orders")}
         </nav>
-        <div className="flex items-center gap-1.5 md:ml-2">
+        <div className="ml-auto flex min-w-0 items-center gap-1.5 md:ml-2">
           <button onClick={onSearch} className="hidden h-10 w-10 place-items-center rounded-xl text-cream/70 hover:bg-white/10 hover:text-cream sm:grid" aria-label="Search menu">
             <Search className="h-5 w-5" />
           </button>
@@ -63,17 +63,17 @@ export function Navbar({
           </button>
           {user ? (
             <div className="relative">
-              <button onClick={() => setMenuOpen((o) => !o)} className="flex items-center gap-2 rounded-xl py-1.5 pl-1.5 pr-2 hover:bg-white/10">
+              <button onClick={() => setMenuOpen((o) => !o)} aria-label="Account menu" aria-expanded={menuOpen} className="flex items-center gap-2 rounded-xl py-1.5 pl-1.5 pr-2 hover:bg-white/10">
                 <span className="grid h-8 w-8 place-items-center rounded-lg bg-orange/90 text-sm font-bold text-ink">
                   {user.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
                 </span>
-                <span className="hidden text-sm font-medium lg:block">{user.name.split(" ")[0]}</span>
+                <span className="hidden max-w-32 truncate text-sm font-medium lg:block">{user.name.split(" ")[0]}</span>
                 <ChevronDown className="hidden h-4 w-4 text-cream/70 lg:block" />
               </button>
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-xl animate-pop">
+                  <div className="absolute right-0 z-20 mt-2 max-h-[calc(100dvh-6rem)] w-52 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-xl animate-pop">
                     <MenuRow icon={<Receipt className="h-4 w-4" />} label="My Orders" onClick={() => { go("orders"); setMenuOpen(false); }} />
                     <MenuRow icon={<User className="h-4 w-4" />} label="Account" onClick={() => { go("account"); setMenuOpen(false); }} />
                     <div className="my-1 h-px bg-line" />
@@ -112,12 +112,12 @@ export function MobileBottomNav({ route, go }: { route: Route; go: (r: Route) =>
     { r: "account", label: "Profile", icon: User },
   ];
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-red/30 bg-ink/95 text-cream backdrop-blur-md md:hidden">
+    <nav aria-label="Customer navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-red/30 bg-ink/95 text-cream backdrop-blur-md md:hidden">
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
         {items.map(({ r, label, icon: Icon, badge }) => {
           const active = route === r || (r === "menu" && route === "home");
           return (
-            <button key={r} onClick={() => go(r)} className={`relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ${active ? "text-lime" : "text-cream/65"}`}>
+            <button key={r} aria-current={active ? "page" : undefined} onClick={() => go(r)} className={`relative flex min-h-14 flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ${active ? "text-lime" : "text-cream/65"}`}>
               <span className="relative">
                 <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 1.8} />
                 {!!badge && badge > 0 && (

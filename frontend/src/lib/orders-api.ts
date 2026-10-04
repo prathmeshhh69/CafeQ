@@ -1,6 +1,6 @@
 import { apiRequest } from "./api";
 import type { AuthUser } from "./auth-api";
-import type { Order, OrderStatus, PaymentStatus, TimeSlot } from "./data";
+import type { Order, OrderStatus, PaymentStatus, PickupStatus, TimeSlot } from "./data";
 
 export interface BackendOrder {
   _id: string;
@@ -11,6 +11,9 @@ export interface BackendOrder {
   orderStatus: OrderStatus;
   paymentStatus: PaymentStatus;
   createdAt?: string;
+  pickupCode?: string;
+  pickupStatus?: PickupStatus;
+  pickedUpAt?: string | null;
 }
 
 export function rememberPickupSlot(orderId: string, slot: TimeSlot) {
@@ -39,6 +42,7 @@ export function asOrder(order: BackendOrder, user: AuthUser, selectedSlot?: Time
       image: typeof line.menuItem === "object" ? line.menuItem.image || "" : "",
     })),
     total: order.totalAmount, status: order.orderStatus, payment: order.paymentStatus,
+    pickupCode: order.pickupCode, pickupStatus: order.pickupStatus, pickedUpAt: order.pickedUpAt,
     pickupDate: slot?.date || "", pickupSlot: slot ? `${slot.start} – ${slot.end}` : "Pickup slot details unavailable",
     placedAt: order.createdAt ? new Date(order.createdAt).toLocaleString("en-IN", {
       day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit",

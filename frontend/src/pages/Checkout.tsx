@@ -121,9 +121,9 @@ export function CheckoutPage({ go, onPlaced }: { go: (r: string) => void; onPlac
       </button>
       <h1 className="font-hand text-4xl">Checkout</h1>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
+      <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* Left — scheduling */}
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Card className="p-5 sm:p-6">
             <h2 className="font-hand text-2xl">When should we have it ready?</h2>
             <p className="text-sm text-muted">Choose a pickup date, then a time slot.</p>
@@ -161,8 +161,8 @@ export function CheckoutPage({ go, onPlaced }: { go: (r: string) => void; onPlac
             <div className="mt-4 space-y-3">
               {cart.map((l) => (
                 <div key={l.item.id} className="flex justify-between gap-3 text-sm">
-                  <span className="text-muted"><span className="font-medium text-ink">{l.item.name}</span> × {l.qty}</span>
-                  <span className="font-medium tabular-nums">{money(l.item.price * l.qty)}</span>
+                  <span className="min-w-0 break-words text-muted"><span className="font-medium text-ink">{l.item.name}</span> × {l.qty}</span>
+                  <span className="shrink-0 font-medium tabular-nums">{money(l.item.price * l.qty)}</span>
                 </div>
               ))}
             </div>
@@ -246,7 +246,7 @@ function PaymentState({ phase, total, error, onRetry, onContinue, onBack, backLa
           <XCircle className="h-20 w-20 text-red animate-pop" />
           <h1 className="mt-6 font-hand text-3xl">Payment didn't go through.</h1>
           <p className="mt-1 text-muted">{error || "Please try again. Your existing order will be reused."}</p>
-          <div className="mt-6 flex gap-3">
+          <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row">
             <Button variant="secondary" onClick={onBack}>{backLabel}</Button>
             <Button onClick={onRetry}><RotateCcw className="h-4 w-4" /> Try Again</Button>
           </div>

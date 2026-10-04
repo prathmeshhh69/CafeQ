@@ -147,11 +147,11 @@ export function HeroSection({
       <DoodleField className="opacity-[0.22] [&_svg]:text-[#714d32]" />
 
       <div className="relative mx-auto max-w-[1320px] px-4 pb-14 pt-8 sm:px-6 sm:pb-16 md:py-14 lg:px-8 lg:py-16">
-        <div className="grid items-center gap-10 md:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-14">
           
           {/* LEFT COLUMN: High-energy copy, badge, search, CTA */}
           <motion.div
-            className="relative z-10 flex flex-col"
+            className="relative z-10 flex min-w-0 flex-col"
             initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -177,7 +177,7 @@ export function HeroSection({
 
             {/* Main Headline */}
             <div className="relative mt-5">
-              <h1 className="font-hand text-[3.6rem] font-bold leading-[0.92] tracking-tight text-[#1a120c] sm:text-6xl lg:text-[4.75rem]">
+              <h1 className="font-hand text-[3rem] font-bold leading-[0.92] tracking-tight text-[#1a120c] sm:text-6xl lg:text-[4.75rem]">
                 Hungry?
                 <br />
                 <span className="relative inline-block font-sans text-[0.74em] font-extrabold tracking-[-0.05em] text-[#1c140d]">
@@ -277,12 +277,12 @@ export function HeroSection({
               >
                 <Button
                   size="lg"
-                  className="group relative overflow-hidden rounded-full border border-[#76351d] bg-gradient-to-r from-[#b94b20] via-[#c45222] to-[#b94b20] px-8 py-3.5 text-sm font-bold uppercase tracking-wide text-[#fff6e8] shadow-[0_5px_0_#6e321e] transition-all hover:bg-[#a9411c] hover:shadow-[0_6px_0_#6e321e]"
+                  className="group relative w-full overflow-hidden rounded-full border border-[#76351d] bg-gradient-to-r from-[#b94b20] via-[#c45222] to-[#b94b20] px-4 py-3.5 text-sm font-bold sm:px-8 uppercase tracking-wide text-[#fff6e8] shadow-[0_5px_0_#6e321e] transition-all hover:bg-[#a9411c] hover:shadow-[0_6px_0_#6e321e]"
                   onClick={onSearchSubmit}
                 >
                   {/* Glossy sweep */}
                   <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-                  <span className="relative flex items-center">
+                  <span className="relative flex flex-wrap items-center justify-center">
                     Explore menu
                     <span className="mx-1.5 text-[#fcd34d]">&mdash;</span>
                     discover flavors
@@ -343,7 +343,7 @@ export function HeroSection({
 
           {/* RIGHT COLUMN: 3D Floating Food Showcase & Interactive Barista */}
           <motion.div
-            className="relative mx-auto w-full max-w-[620px]"
+            className="relative mx-auto min-w-0 w-full max-w-[620px]"
             initial={reduceMotion ? false : { opacity: 0, scale: 0.95, x: 20 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 0.55, delay: 0.08 }}
@@ -356,7 +356,7 @@ export function HeroSection({
             <Sparkle className="pointer-events-none absolute -top-4 right-8 z-30 hidden text-[30px] text-[#9c713f] sm:block animate-float-reverse" />
 
             {/* Main Food Showcase Box */}
-            <div className="relative overflow-hidden rounded-[36px] border-[5px] border-[#211912] bg-[#f2e4ce] shadow-[10px_12px_0_#be9d72] sm:aspect-[1.38/1] aspect-[1.25/1]">
+            <div className="relative overflow-hidden rounded-[36px] border-[5px] border-[#211912] bg-[#f2e4ce] shadow-[10px_12px_0_#be9d72] sm:aspect-[1.38/1] aspect-[1.05/1]">
               <AnimatePresence mode="wait">
                 {currentDisplayItem ? (
                   <motion.div
@@ -393,7 +393,7 @@ export function HeroSection({
                       </h3>
 
                       {/* Bottom action row with price & controls */}
-                      <div className="mt-2.5 flex items-center justify-between gap-2 pt-2 border-t border-white/15">
+                      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/15">
                         <div className="flex items-baseline gap-1.5">
                           <span className="text-xl font-extrabold text-[#fed7aa] sm:text-2xl">
                             {money(currentDisplayItem.price)}
@@ -401,7 +401,7 @@ export function HeroSection({
                           <span className="text-[11px] text-[#fed7aa]/80">freshly prepared</span>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
                           <div className="flex items-center gap-1 rounded-full bg-[#1b130e]/80 p-0.5 backdrop-blur-md border border-white/10 shadow">
                             <button
                               type="button"
@@ -460,7 +460,7 @@ export function HeroSection({
                     />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#140d08]/95 via-[#140d08]/50 to-transparent px-5 pb-5 pt-20 text-white">
                       <h3 className="text-2xl font-bold sm:text-3xl">{currentFallback.name}</h3>
-                      <div className="mt-2.5 flex items-center justify-between gap-2 pt-2 border-t border-white/15">
+                      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/15">
                         <p className="text-xs text-[#fed7aa]">Freshly prepared by CafeQ Chef</p>
                         <div className="flex items-center gap-1 rounded-full bg-[#1b130e]/80 p-0.5 backdrop-blur-md border border-white/10 shadow">
                           <button
@@ -539,7 +539,7 @@ export function HeroSection({
                       key={idx}
                       type="button"
                       onClick={() => setActiveSlide(idx)}
-                      className={`group flex items-center gap-2 rounded-2xl border px-3 py-1.5 transition-all ${
+                      className={`group flex shrink-0 items-center gap-2 rounded-2xl border px-3 py-1.5 transition-all ${
                         isActive
                           ? "border-[#b94b20] bg-[#fffaf0] ring-2 ring-[#b94b20]/30 shadow-md scale-102"
                           : "border-[#d8c2a3] bg-[#fffcf5]/80 hover:border-[#b94b20] hover:bg-[#fffaf0]"
@@ -558,7 +558,7 @@ export function HeroSection({
             )}
 
             {/* Interactive Cafe Barista Mascot with Speech Bubble */}
-            <div className="absolute -bottom-8 z-20 hidden sm:-right-24 sm:block lg:-right-28 xl:-right-32">
+            <div className="absolute -bottom-8 z-20 hidden lg:block lg:-right-24 lg:-right-28 xl:-right-32">
               {/* Dynamic Speech Bubble */}
               <motion.div
                 className="absolute -top-14 right-4 z-30 max-w-[210px] cursor-pointer rounded-2xl border-2 border-[#5b3526] bg-[#fffdfa] p-2.5 shadow-[0_6px_14px_rgba(40,25,15,0.18)]"

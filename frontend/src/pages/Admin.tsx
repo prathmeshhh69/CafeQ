@@ -13,7 +13,7 @@ import { Button, Card, Input, StatusBadge, PaymentBadge, ConfirmationModal, Moda
 import { ImageWithFallback } from "../lib/ImageWithFallback";
 import { PlateDoodle } from "../components/Doodles";
 import {
-  upcomingDates, money,
+  upcomingDates, money, isOrderActive,
   type Order, type OrderStatus, type MenuItem, type TimeSlot,
 } from "../lib/data";
 import { useStore } from "../lib/store";
@@ -25,6 +25,7 @@ import { adminMenuApi } from "../lib/admin-menu-api";
 import { inventoryApi, type InventoryRow } from "../lib/inventory-api";
 import { asTimeSlot, timeSlotsApi } from "../lib/time-slots-api";
 import { adminAnalyticsApi, type DashboardData } from "../lib/admin-analytics-api";
+import OrderPickupVerification from "../components/OrderPickupVerification";
 
 type AdminView = "dashboard" | "orders" | "menu" | "inventory" | "slots";
 
@@ -36,23 +37,50 @@ const NAV: { key: AdminView; label: string; icon: typeof LayoutDashboard }[] = [
   { key: "slots", label: "Pickup Slots", icon: CalendarClock },
 ];
 
+function adminViewFromLocation(): AdminView {
+  const requested = window.location.pathname.split("/")[2];
+  return NAV.find((item) => item.key === requested)?.key ?? "dashboard";
+}
+
 export function AdminApp({ exit }: { exit: () => void }) {
-  const [view, setView] = useState<AdminView>("dashboard");
+  const [view, setView] = useState<AdminView>(adminViewFromLocation);
   const [open, setOpen] = useState(false);
   const { logout, toast, user } = useStore();
 
+  useEffect(() => {
+    const sync = () => setView(adminViewFromLocation());
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", closeOnEscape); };
+  }, [open]);
+
+  const navigate = (next: AdminView) => {
+    setView(next);
+    setOpen(false);
+    window.history.pushState(null, "", next === "dashboard" ? "/admin" : `/admin/${next}`);
+    window.scrollTo({ top: 0 });
+  };
+
   return (
-    <div className="flex min-h-screen bg-cream">
+    <div className="flex min-h-dvh bg-cream">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-line bg-surface transition-transform lg:static lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 hidden h-dvh w-64 max-w-[calc(100vw-2rem)] shrink-0 flex-col lg:flex border-r border-line bg-surface transition-transform lg:static lg:translate-x-0 ${open ? "!flex translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-16 items-center justify-between border-b border-line px-5">
           <Logo />
-          <button onClick={() => setOpen(false)} className="lg:hidden"><X className="h-5 w-5" /></button>
+          <button onClick={() => setOpen(false)} aria-label="Close admin navigation" className="grid h-11 w-11 place-items-center rounded-xl lg:hidden"><X className="h-5 w-5" /></button>
         </div>
         <span className="px-5 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted">Manage</span>
-        <nav className="mt-2 flex-1 space-y-1 px-3">
+        <nav id="admin-navigation" aria-label="Admin navigation" className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto px-3">
           {NAV.map(({ key, label, icon: Icon }) => (
-            <button key={key} onClick={() => { setView(key); setOpen(false); }}
+            <button key={key} onClick={() => navigate(key)} aria-current={view === key ? "page" : undefined}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${view === key ? "bg-lime text-ink" : "text-muted hover:bg-cream hover:text-ink"}`}>
               <Icon className="h-4.5 w-4.5" /> {label}
             </button>
@@ -75,12 +103,12 @@ export function AdminApp({ exit }: { exit: () => void }) {
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center gap-3 border-b border-line bg-surface/80 px-4 backdrop-blur lg:px-8">
-          <button onClick={() => setOpen(true)} className="lg:hidden"><MenuIcon className="h-6 w-6" /></button>
-          <span className="text-sm font-semibold capitalize">{NAV.find((n) => n.key === view)?.label}</span>
-          <button onClick={exit} className="ml-auto rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted hover:text-ink">View customer site</button>
+        <header className="flex min-h-16 shrink-0 items-center gap-2 border-b border-line bg-surface/80 px-4 backdrop-blur lg:px-8">
+          <button onClick={() => setOpen(true)} aria-label="Open admin navigation" aria-expanded={open} aria-controls="admin-navigation" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl lg:hidden"><MenuIcon className="h-6 w-6" /></button>
+          <span className="min-w-0 break-words text-sm font-semibold capitalize">{NAV.find((n) => n.key === view)?.label}</span>
+          <button onClick={exit} className="ml-auto max-w-40 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted hover:text-ink">View customer site</button>
         </header>
-        <main className="flex-1 p-4 lg:p-8">
+        <main className="min-w-0 flex-1 p-4 lg:p-8">
           {view === "dashboard" && <Dashboard />}
           {view === "orders" && <AdminOrders />}
           {view === "menu" && <AdminMenu />}
@@ -214,7 +242,7 @@ function Dashboard() {
           </section>
 
           <Card className={"overflow-hidden p-4 sm:p-5 " + (inventoryAlerts ? "border-orange/40 bg-orange/5" : "bg-surface")}>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-start gap-3">
                 <span className={"grid h-10 w-10 flex-none place-items-center rounded-xl " + (inventoryAlerts ? "bg-orange/15 text-orange" : "bg-green/15 text-green")}>
                   {inventoryAlerts ? <AlertTriangle className="h-5 w-5" /> : <Boxes className="h-5 w-5" />}
@@ -224,7 +252,7 @@ function Dashboard() {
                   <p className="text-sm text-muted">{inventoryAlerts ? "Check these items before the next rush." : "No low or out-of-stock items right now."}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:min-w-[20rem] sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 lg:min-w-[20rem] sm:grid-cols-3">
                 <div className="rounded-xl bg-surface/80 px-3 py-2">
                   <p className="text-xs text-muted">Tracked items</p>
                   <p className="mt-0.5 text-xl font-bold tabular-nums">{data.inventory.totalItems}</p>
@@ -312,6 +340,12 @@ const NEXT_ACTION: Partial<Record<OrderStatus, { to: OrderStatus; label: string 
   PREPARING: { to: "READY", label: "Mark Ready" },
   READY: { to: "COMPLETED", label: "Mark Completed" },
 };
+
+function nextOrderAction(order: Order) {
+  // READY -> COMPLETED remains a separate status update, available after collection only.
+  if (order.status === "READY" && order.pickupStatus !== "PICKED_UP") return undefined;
+  return NEXT_ACTION[order.status];
+}
 const FILTERS: (OrderStatus | "ALL")[] = ["ALL", "PENDING", "CONFIRMED", "PREPARING", "READY", "COMPLETED", "CANCELLED"];
 const FILTER_META: Record<OrderStatus | "ALL", { label: string; icon: typeof ClipboardList }> = {
   ALL: { label: "All orders", icon: ClipboardList },
@@ -337,6 +371,8 @@ function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [pickupBusy, setPickupBusy] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState<string | null>(null);
   const [filter, setFilter] = useState<OrderStatus | "ALL">("ALL");
   const [selected, setSelected] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
@@ -357,25 +393,33 @@ function AdminOrders() {
   useEffect(() => {
     if (!selected || !user) return;
     let active = true;
+    setDetailsLoading(selected);
     adminOrdersApi.get(selected).then(({ order }) => {
       if (!active) return;
       const detail = asOrder(order, user);
       setMerged((previous) => previous.map((entry) => entry.id === selected ? detail : entry));
     }).catch((reason: unknown) => {
       if (active) toast(reason instanceof Error ? reason.message : "Could not load order details.", "error");
+    }).finally(() => {
+      if (active) setDetailsLoading(null);
     });
-    return () => { active = false; };
+    return () => { active = false; setDetailsLoading(null); };
   }, [selected, user?.id]);
 
   const list = merged.filter((o) => filter === "ALL" || o.status === filter);
-  const activeOrders = merged.filter((o) => ["PENDING", "CONFIRMED", "PREPARING", "READY"].includes(o.status)).length;
+  const activeOrders = merged.filter(isOrderActive).length;
   const completedOrders = merged.filter((o) => o.status === "COMPLETED").length;
   const paidRevenue = merged.filter((o) => o.payment === "PAID").reduce((sum, o) => sum + o.total, 0);
   const order = merged.find((o) => o.id === selected);
 
+  const updatePickupOrder = useCallback((id: string, update: Partial<Pick<Order, "status" | "pickupStatus" | "pickedUpAt">>) => {
+    setMerged((previous) => previous.map((entry) => entry.id === id ? { ...entry, ...update } : entry));
+  }, []);
+
   const advance = async (o: Order) => {
-    const next = NEXT_ACTION[o.status];
-    if (!next || busy) return;
+    const current = merged.find((entry) => entry.id === o.id);
+    const next = current && nextOrderAction(current);
+    if (!next || busy || pickupBusy || detailsLoading === o.id) return;
     setBusy(o.id);
     try {
       const { order } = await adminOrdersApi.updateStatus(o.id, next.to);
@@ -387,7 +431,7 @@ function AdminOrders() {
   };
 
   const cancel = async () => {
-    if (!confirmCancel || busy) return;
+    if (!confirmCancel || busy || pickupBusy || detailsLoading === confirmCancel) return;
     setBusy(confirmCancel);
     try {
       const { order } = await adminOrdersApi.updateStatus(confirmCancel, "CANCELLED");
@@ -439,13 +483,13 @@ function AdminOrders() {
       </div>}
       {!loading && !error && <div className="space-y-2.5">
         {list.map((o) => {
-          const active = ["PENDING", "CONFIRMED", "PREPARING", "READY"].includes(o.status);
-          const action = NEXT_ACTION[o.status];
+          const active = isOrderActive(o);
+          const action = nextOrderAction(o);
           return <article key={o.id} className={`group rounded-2xl border border-line border-l-4 ${STATUS_EDGE[o.status]} bg-surface p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none motion-reduce:transition-none sm:p-5`}>
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] sm:items-center">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <button type="button" onClick={() => setSelected(o.id)} className="flex items-center gap-1.5 text-sm font-bold tracking-tight hover:text-orange focus-visible:outline-2 focus-visible:outline-orange">
+                  <button type="button" onClick={() => setSelected(o.id)} className="flex min-w-0 items-start gap-1.5 break-all text-left text-sm font-bold tracking-tight hover:text-orange focus-visible:outline-2 focus-visible:outline-orange">
                     <ReceiptText className="h-4 w-4 text-orange" />{o.id}<ArrowRight className="h-3.5 w-3.5 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100 motion-reduce:transition-none" />
                   </button>
                   <span className="text-xs text-muted">{o.pickupSlot}</span>
@@ -458,9 +502,10 @@ function AdminOrders() {
                 <span className="text-lg font-bold tabular-nums">{money(o.total)}</span>
                 <PaymentBadge status={o.payment} />
                 <span className="relative inline-flex"><StatusBadge status={o.status} />{active && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-orange ring-2 ring-surface motion-safe:animate-pulse motion-reduce:animate-none" />}</span>
+                {o.pickupStatus === "PICKED_UP" && <span className="rounded-full border border-line bg-cream px-2.5 py-1 text-xs font-semibold">Picked Up</span>}
               </div>
-              <div className="flex items-center gap-2 sm:justify-end">
-                {action ? <Button size="sm" disabled={!!busy} onClick={() => { void advance(o); }}>{action.label}</Button> : null}
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                {action ? <Button size="sm" disabled={!!busy || pickupBusy || detailsLoading === o.id} onClick={() => { void advance(o); }}>{action.label}</Button> : o.status === "READY" && o.pickupStatus !== "PICKED_UP" ? <Button size="sm" onClick={() => setSelected(o.id)}>Verify Pickup</Button> : null}
                 <Button size="sm" variant="ghost" onClick={() => setSelected(o.id)}>Details <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" /></Button>
               </div>
             </div>
@@ -470,14 +515,13 @@ function AdminOrders() {
       </div>}
 
       {/* Detail side panel */}
-      <Modal open={!!order} onClose={() => setSelected(null)} className="max-w-lg sm:!ml-auto sm:!mr-0 sm:h-screen sm:!max-h-screen sm:!rounded-none sm:rounded-l-3xl">
+      <Modal open={!!order} onClose={() => setSelected(null)} closeLabel="Close order details" className="max-w-lg sm:!ml-auto sm:!mr-0 sm:h-[calc(100dvh-2rem)] sm:!max-h-[calc(100dvh-2rem)] sm:!rounded-none sm:rounded-l-3xl">
         {order && (
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <h2 className="font-sans text-2xl font-bold tracking-tight text-ink">Order {order.id}</h2>
-              <button onClick={() => setSelected(null)}><X className="h-5 w-5" /></button>
             </div>
-            <div className="mt-2 flex gap-2"><StatusBadge status={order.status} /><PaymentBadge status={order.payment} /></div>
+            <div className="mt-2 flex flex-wrap gap-2"><StatusBadge status={order.status} /><PaymentBadge status={order.payment} /></div>
 
             <div className="mt-5 rounded-2xl border border-line bg-cream p-4 text-sm">
               <p className="font-semibold">{order.customer.name}</p>
@@ -490,18 +534,22 @@ function AdminOrders() {
             <div className="mt-2 divide-y divide-line">
               {order.lines.map((l) => (
                 <div key={l.itemId} className="flex items-center gap-3 py-2.5 text-sm">
-                  <ImageWithFallback src={l.image} alt={l.name} className="h-10 w-10 rounded-lg object-cover" />
-                  <span className="flex-1">{l.name} × {l.qty}</span>
-                  <span className="font-medium tabular-nums">{money(l.price * l.qty)}</span>
+                  <ImageWithFallback src={l.image} alt={l.name} className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+                  <span className="min-w-0 flex-1 break-words">{l.name} × {l.qty}</span>
+                  <span className="shrink-0 font-medium tabular-nums">{money(l.price * l.qty)}</span>
                 </div>
               ))}
             </div>
             <div className="mt-2 flex justify-between border-t border-line pt-2 font-bold"><span>Total</span><span>{money(order.total)}</span></div>
 
+            {detailsLoading === order.id && <p role="status" className="mt-4 text-xs text-muted">Loading latest order details…</p>}
+            <OrderPickupVerification key={`${order.id}-${order.status}-${order.pickupStatus}`} order={order}
+              disabled={!!busy || detailsLoading === order.id} onOrderUpdate={updatePickupOrder} onBusyChange={setPickupBusy} />
+
             <div className="mt-6 space-y-2">
-              {NEXT_ACTION[order.status] && <Button block disabled={!!busy} onClick={() => { void advance(order); }}>{NEXT_ACTION[order.status]!.label}</Button>}
-              {order.status !== "CANCELLED" && order.status !== "COMPLETED" && (
-                <Button variant="secondary" block className="!text-red" onClick={() => setConfirmCancel(order.id)}>Cancel Order</Button>
+              {nextOrderAction(order) && <Button block disabled={!!busy || pickupBusy || detailsLoading === order.id} onClick={() => { void advance(order); }}>{nextOrderAction(order)!.label}</Button>}
+              {order.status !== "CANCELLED" && order.status !== "COMPLETED" && order.pickupStatus !== "PICKED_UP" && (
+                <Button variant="secondary" block disabled={!!busy || pickupBusy || detailsLoading === order.id} className="!text-red" onClick={() => setConfirmCancel(order.id)}>Cancel Order</Button>
               )}
             </div>
           </div>
@@ -596,7 +644,7 @@ function AdminMenu() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <h1 className="font-sans text-3xl font-extrabold tracking-tight text-ink">Menu Management</h1>
         <Button disabled={busy} onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> Add Menu Item</Button>
       </div>
@@ -616,24 +664,24 @@ function AdminMenu() {
           <div>
             <span className="mb-1.5 block text-sm font-medium text-ink">Category</span>
             <Select.Root value={categoryFilter} onValueChange={(value) => { setCategoryFilter(value ?? "ALL"); setPage(1); }}>
-              <Select.Trigger className="group flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-left text-sm font-medium text-ink shadow-sm transition-all hover:border-orange/50 hover:shadow focus-visible:border-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange/25 data-[popup-open]:border-orange/60 data-[popup-open]:shadow-md">
+              <Select.Trigger aria-label="Filter menu by category" className="group flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-left text-sm font-medium text-ink shadow-sm transition-all hover:border-orange/50 hover:shadow focus-visible:border-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange/25 data-[popup-open]:border-orange/60 data-[popup-open]:shadow-md">
                 <span className="flex min-w-0 items-center gap-2.5">
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-orange/10 text-orange"><Tag className="h-3.5 w-3.5" /></span>
-                  <Select.Value>{(value: string | null) => value === "ALL" || !value ? "All categories" : value}</Select.Value>
+                  <Select.Value className="min-w-0 truncate">{(value: string | null) => value === "ALL" || !value ? "All categories" : value}</Select.Value>
                 </span>
                 <Select.Icon className="text-muted transition-transform duration-150 group-data-[popup-open]:rotate-180"><ChevronDown className="h-4 w-4" /></Select.Icon>
               </Select.Trigger>
               <Select.Portal>
                 <Select.Positioner sideOffset={7} align="start" className="z-[60]">
-                  <Select.Popup className="animate-fade-up min-w-[var(--anchor-width)] overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-xl">
+                  <Select.Popup className="animate-fade-up w-[var(--anchor-width)] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-xl">
                     <div className="flex items-center justify-between px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
                       <span>Browse categories</span><span>{categoryOptions.length}</span>
                     </div>
-                    <Select.List className="max-h-64 overflow-y-auto">
+                    <Select.List className="max-h-[min(16rem,50dvh)] overflow-y-auto">
                       {[{ value: "ALL", label: "All categories" }, ...categoryOptions.map((category) => ({ value: category, label: category }))].map(({ value, label }) => (
-                        <Select.Item key={value} value={value} className="group/item flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm text-ink outline-none transition-colors data-[highlighted]:bg-cream data-[selected]:bg-orange/10 data-[selected]:font-semibold data-[selected]:text-orange">
-                          <Select.ItemText>{label}</Select.ItemText>
-                          <Select.ItemIndicator className="text-orange"><Check className="h-4 w-4" /></Select.ItemIndicator>
+                        <Select.Item key={value} value={value} className="group/item flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm text-ink outline-none transition-colors data-[highlighted]:bg-cream data-[selected]:bg-orange/10 data-[selected]:font-semibold data-[selected]:text-orange">
+                          <Select.ItemText className="min-w-0 flex-1 break-words">{label}</Select.ItemText>
+                          <Select.ItemIndicator className="shrink-0 text-orange"><Check className="h-4 w-4" /></Select.ItemIndicator>
                         </Select.Item>
                       ))}
                     </Select.List>
@@ -644,12 +692,12 @@ function AdminMenu() {
             </Select.Root>
           </div>
         </div>
-        <table className="hidden w-full text-sm md:table">
+        <table className="hidden w-full table-fixed text-sm xl:table">
           <thead>
             <tr className="border-b border-line bg-cream/60 text-left text-xs uppercase tracking-wide text-muted">
-              <th className="px-4 py-3 font-semibold">Image</th><th className="px-4 py-3 font-semibold">Name</th>
+              <th className="w-20 px-4 py-3 font-semibold">Image</th><th className="px-4 py-3 font-semibold">Name</th>
               <th className="px-4 py-3 font-semibold">Category</th><th className="px-4 py-3 font-semibold">Price</th>
-              <th className="px-4 py-3 font-semibold">Availability</th><th className="px-4 py-3 font-semibold">Actions</th>
+              <th className="px-4 py-3 font-semibold">Availability</th><th className="w-40 px-4 py-3 font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -675,14 +723,20 @@ function AdminMenu() {
             ))}
           </tbody>
         </table>
-        <div className="divide-y divide-line md:hidden">
+        <div className="divide-y divide-line xl:hidden">
           {pageItems.map((m) => (
-            <div key={m.id} className="flex items-center gap-3 p-4">
-              <ImageWithFallback src={m.image} alt={m.name} category={m.category} className="h-12 w-12 rounded-lg object-cover" />
-              <div className="min-w-0 flex-1"><p className="truncate font-medium">{m.name}</p><p className="text-xs text-muted">{m.category} · {money(m.price)}</p></div>
-              <button onClick={() => setEditing(m)} className="grid h-8 w-8 place-items-center rounded-lg border border-line"><Pencil className="h-4 w-4" /></button>
-              <button onClick={() => setDeleteId(m.id)} className="grid h-8 w-8 place-items-center rounded-lg border border-line text-red"><Trash2 className="h-4 w-4" /></button>
-            </div>
+            <article key={m.id} className="p-4">
+              <div className="flex items-start gap-3">
+                <ImageWithFallback src={m.image} alt={m.name} category={m.category} className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+                <div className="min-w-0 flex-1"><p className="break-words font-medium">{m.name}</p><p className="mt-1 text-sm text-muted">{m.category} · {money(m.price)}</p></div>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button disabled={busy} onClick={() => { void toggleAvailability(m); }} aria-label={`Toggle availability for ${m.name}`}
+                  className={`rounded-xl px-3 py-2 text-sm font-semibold ${m.available ? "bg-ink/10 text-ink" : "bg-red/15 text-red"}`}>{m.available ? "Available" : "Unavailable"}</button>
+                <button disabled={busy} onClick={() => setEditing(m)} aria-label={`Edit ${m.name}`} className="inline-flex items-center gap-2 rounded-xl border border-line px-3 py-2 text-sm"><Pencil className="h-4 w-4" /> Edit</button>
+                <button disabled={busy} onClick={() => setDeleteId(m.id)} aria-label={`Delete ${m.name}`} className="inline-flex items-center gap-2 rounded-xl border border-line px-3 py-2 text-sm text-red"><Trash2 className="h-4 w-4" /> Delete</button>
+              </div>
+            </article>
           ))}
         </div>
         {filteredItems.length === 0 ? (
@@ -746,7 +800,7 @@ function MenuItemModal({ item, categories, busy, onClose, onSave }: {
   const upd = (p: Partial<MenuItem>) => setForm((f) => ({ ...f, ...p }));
   return (
     <Modal open onClose={onClose} className="max-w-lg">
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <h2 className="font-sans text-2xl font-bold tracking-tight text-ink">{item ? "Edit Menu Item" : "Add Menu Item"}</h2>
         <div className="mt-4 space-y-3">
           <Input label="Name" value={form.name} onChange={(e) => upd({ name: e.target.value })} placeholder="e.g. Espresso" />
@@ -755,7 +809,7 @@ function MenuItemModal({ item, categories, busy, onClose, onSave }: {
             <textarea value={form.description} onChange={(e) => upd({ description: e.target.value })} rows={2}
               className="w-full resize-none rounded-xl border border-line bg-surface px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-lime/60" />
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="Price (₹)" type="number" value={form.price || ""} onChange={(e) => upd({ price: Number(e.target.value) })} />
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium">Category</span>
@@ -768,13 +822,15 @@ function MenuItemModal({ item, categories, busy, onClose, onSave }: {
           <Input label="Image URL" value={form.image} onChange={(e) => upd({ image: e.target.value })} />
           <label className="flex items-center justify-between rounded-xl border border-line bg-cream px-4 py-3">
             <span className="text-sm font-medium">Available</span>
-            <button type="button" onClick={() => upd({ available: !form.available })}
-              className={`relative h-6 w-11 rounded-full transition-colors ${form.available ? "bg-lime-deep" : "bg-line"}`}>
-              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface transition-transform ${form.available ? "translate-x-5" : "translate-x-0.5"}`} />
+            <button type="button" role="switch" aria-label="Menu item available" aria-checked={form.available} onClick={() => upd({ available: !form.available })}
+              className="grid h-11 w-14 shrink-0 place-items-center rounded-full">
+              <span className={`relative block h-6 w-11 rounded-full transition-colors ${form.available ? "bg-lime-deep" : "bg-line"}`}>
+                <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-surface transition-transform ${form.available ? "translate-x-5" : "translate-x-0"}`} />
+              </span>
             </button>
           </label>
         </div>
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
           <Button variant="secondary" block onClick={onClose}>Cancel</Button>
           <Button block loading={busy} onClick={() => onSave(form)} disabled={!form.name || form.price <= 0}>Save Item</Button>
         </div>
@@ -865,7 +921,7 @@ function AdminInventory() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <h1 className="font-sans text-3xl font-extrabold tracking-tight text-ink">Inventory</h1>
         <Button disabled={loading || busy || missingMenuItems.length === 0} onClick={() => setCreating(true)}>
           <Plus className="h-4 w-4" /> Add Inventory
@@ -885,10 +941,10 @@ function AdminInventory() {
             </button>
           ))}
         </div>
-        <div className="relative ml-auto">
+        <div className="relative w-full sm:ml-auto sm:w-auto">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
           <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search product…" aria-label="Search inventory"
-            className="rounded-xl border border-line bg-surface py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-lime/60" />
+            className="w-full rounded-xl border border-line bg-surface py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-lime/60" />
         </div>
       </div>
 
@@ -899,7 +955,7 @@ function AdminInventory() {
         <Card className="px-6"><EmptyState titleClassName="font-sans font-bold tracking-tight" illustration={<PlateDoodle />} title="All stocked up!" body="No items need attention right now." /></Card>
       ) : (
         <Card className="overflow-hidden">
-          <table className="hidden w-full text-sm md:table">
+          <table className="hidden w-full table-fixed text-sm xl:table">
             <thead>
               <tr className="border-b border-line bg-cream/60 text-left text-xs uppercase tracking-wide text-muted">
                 <th className="px-4 py-3 font-semibold">Product</th><th className="px-4 py-3 font-semibold">Current Stock</th>
@@ -913,16 +969,16 @@ function AdminInventory() {
                 return (
                   <tr key={m.id} className="hover:bg-cream/40">
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-3"><ImageWithFallback src={m.image} alt={m.name} category={m.category} className="h-10 w-10 rounded-lg object-cover" /><span className="font-medium">{m.name}</span></div>
+                      <div className="flex min-w-0 items-center gap-3"><ImageWithFallback src={m.image} alt={m.name} category={m.category} className="h-10 w-10 shrink-0 rounded-lg object-cover" /><span className="font-medium">{m.name}</span></div>
                     </td>
                     <td className="px-4 py-3 font-semibold tabular-nums">{m.stock}</td>
                     <td className="px-4 py-3 tabular-nums text-muted">{m.minStock}</td>
                     <td className="px-4 py-3"><HealthBadge health={health} /></td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
-                        <button onClick={() => setAction({ item: m, mode: "add" })} className="inline-flex items-center gap-1 rounded-lg bg-lime px-2.5 py-1.5 text-xs font-semibold text-ink hover:bg-lime-deep"><ArrowUpCircle className="h-3.5 w-3.5" /> Add Stock</button>
-                        <button onClick={() => setAction({ item: m, mode: "set" })} className="inline-flex items-center gap-1 rounded-lg border border-ink px-2.5 py-1.5 text-xs font-semibold text-ink hover:bg-ink hover:text-cream"><Replace className="h-3.5 w-3.5" /> Set Stock</button>
-                        <button onClick={() => setAction({ item: m, mode: "min" })} className="inline-flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted hover:text-ink">Edit Min</button>
+                        <button disabled={busy} onClick={() => setAction({ item: m, mode: "add" })} className="inline-flex items-center gap-1 rounded-lg bg-lime px-2.5 py-1.5 text-xs font-semibold text-ink hover:bg-lime-deep"><ArrowUpCircle className="h-3.5 w-3.5" /> Add Stock</button>
+                        <button disabled={busy} onClick={() => setAction({ item: m, mode: "set" })} className="inline-flex items-center gap-1 rounded-lg border border-ink px-2.5 py-1.5 text-xs font-semibold text-ink hover:bg-ink hover:text-cream"><Replace className="h-3.5 w-3.5" /> Set Stock</button>
+                        <button disabled={busy} onClick={() => setAction({ item: m, mode: "min" })} className="inline-flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-muted hover:text-ink">Edit Min</button>
                       </div>
                     </td>
                   </tr>
@@ -930,17 +986,18 @@ function AdminInventory() {
               })}
             </tbody>
           </table>
-          <div className="divide-y divide-line md:hidden">
+          <div className="divide-y divide-line xl:hidden">
             {pageItems.map((m) => (
               <div key={m.id} className="p-4">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <ImageWithFallback src={m.image} alt={m.name} category={m.category} className="h-11 w-11 rounded-lg object-cover" />
-                  <div className="flex-1"><p className="font-medium">{m.name}</p><p className="text-xs text-muted">Stock {m.stock} · min {m.minStock}</p></div>
+                  <div className="min-w-0 flex-1"><p className="break-words font-medium">{m.name}</p><p className="text-xs text-muted">Stock {m.stock} · min {m.minStock}</p></div>
                   <HealthBadge health={stockHealth(m)} />
                 </div>
-                <div className="mt-3 flex gap-1.5">
-                  <button onClick={() => setAction({ item: m, mode: "add" })} className="flex-1 rounded-lg bg-lime py-1.5 text-xs font-semibold">Add Stock</button>
-                  <button onClick={() => setAction({ item: m, mode: "set" })} className="flex-1 rounded-lg border border-ink py-1.5 text-xs font-semibold">Set Stock</button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button disabled={busy} onClick={() => setAction({ item: m, mode: "add" })} className="flex-1 rounded-lg bg-lime py-1.5 text-xs font-semibold">Add Stock</button>
+                  <button disabled={busy} onClick={() => setAction({ item: m, mode: "set" })} className="flex-1 rounded-lg border border-ink py-1.5 text-xs font-semibold">Set Stock</button>
+                  <button disabled={busy} onClick={() => setAction({ item: m, mode: "min" })} className="flex-1 rounded-lg border border-line px-2 py-1.5 text-xs font-semibold">Edit Min</button>
                 </div>
               </div>
             ))}
@@ -995,7 +1052,7 @@ function StockModal({ action, busy, onClose, onApply }: { action: { item: Invent
   const title = action.mode === "add" ? "Add Stock" : action.mode === "set" ? "Set Stock" : "Edit Minimum Stock";
   return (
     <Modal open onClose={onClose} className="max-w-sm">
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className={`mb-3 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-bold ${isAdd ? "bg-lime text-ink" : action.mode === "set" ? "bg-ink text-cream" : "bg-cream text-ink border border-line"}`}>
           {isAdd ? <ArrowUpCircle className="h-4 w-4" /> : action.mode === "set" ? <Replace className="h-4 w-4" /> : null}{title}
         </div>
@@ -1008,7 +1065,7 @@ function StockModal({ action, busy, onClose, onApply }: { action: { item: Invent
         <Input className="mt-4" type="number" value={val || ""} onChange={(e) => setVal(Number(e.target.value))}
           label={isAdd ? "Quantity to add" : action.mode === "set" ? "New stock quantity" : "Minimum stock"} />
         {isAdd && <p className="mt-2 text-sm text-green">New total will be {(action.item.stock ?? 0) + (val || 0)}.</p>}
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
           <Button variant="secondary" block onClick={onClose}>Cancel</Button>
           <Button block variant={isAdd ? "primary" : "dark"} loading={busy} onClick={() => onApply(val)}>{title}</Button>
         </div>
@@ -1024,7 +1081,7 @@ function CreateInventoryModal({ items, busy, onClose, onCreate }: {
   const [menuItem, setMenuItem] = useState(items[0]?.id || "");
   const [quantity, setQuantity] = useState(0);
   const [minimumStock, setMinimumStock] = useState(5);
-  return <Modal open onClose={onClose} className="max-w-sm"><div className="p-6">
+  return <Modal open onClose={onClose} className="max-w-sm"><div className="p-4 sm:p-6">
     <h2 className="font-sans text-2xl font-bold tracking-tight text-ink">Add Inventory</h2>
     <label className="mt-4 block text-sm font-medium">Menu Item
       <select value={menuItem} onChange={(event) => setMenuItem(event.target.value)}
@@ -1032,11 +1089,11 @@ function CreateInventoryModal({ items, busy, onClose, onCreate }: {
         {items.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select>
     </label>
-    <div className="mt-3 grid grid-cols-2 gap-3">
+    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
       <Input label="Quantity" type="number" min={0} value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} />
       <Input label="Minimum Stock" type="number" min={0} value={minimumStock} onChange={(event) => setMinimumStock(Number(event.target.value))} />
     </div>
-    <div className="mt-6 flex gap-3">
+    <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
       <Button variant="secondary" block onClick={onClose}>Cancel</Button>
       <Button block loading={busy} onClick={() => onCreate(menuItem, quantity, minimumStock)}>Create</Button>
     </div>
@@ -1180,17 +1237,17 @@ function CreateSlotModal({ date, busy, onClose, onCreate }: {
   const [max, setMax] = useState(20);
   return (
     <Modal open onClose={onClose} className="max-w-sm">
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <h2 className="font-sans text-2xl font-bold tracking-tight text-ink">Create Time Slot</h2>
         <div className="mt-4 space-y-3">
           <Input label="Date" type="date" value={date} readOnly />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="Start Time" value={start} onChange={(e) => setStart(e.target.value)} />
             <Input label="End Time" value={end} onChange={(e) => setEnd(e.target.value)} />
           </div>
           <Input label="Maximum Orders" type="number" value={max || ""} onChange={(e) => setMax(Number(e.target.value))} />
         </div>
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
           <Button variant="secondary" block onClick={onClose}>Cancel</Button>
           <Button block loading={busy} onClick={() => onCreate(start, end, max)}>Create Slot</Button>
         </div>
@@ -1203,12 +1260,12 @@ function EditSlotModal({ slot, busy, onClose, onSave }: {
   slot: TimeSlot; busy: boolean; onClose: () => void; onSave: (maxOrders: number) => void;
 }) {
   const [maxOrders, setMaxOrders] = useState(slot.max);
-  return <Modal open onClose={onClose} className="max-w-sm"><div className="p-6">
+  return <Modal open onClose={onClose} className="max-w-sm"><div className="p-4 sm:p-6">
     <h2 className="font-sans text-2xl font-bold tracking-tight text-ink">Edit Time Slot</h2>
     <p className="mt-1 text-sm text-muted">{slot.start} – {slot.end} · {slot.current} orders booked</p>
     <Input className="mt-4" label="Maximum Orders" type="number" min={1} value={maxOrders}
       onChange={(event) => setMaxOrders(Number(event.target.value))} />
-    <div className="mt-6 flex gap-3"><Button variant="secondary" block onClick={onClose}>Cancel</Button>
+    <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row"><Button variant="secondary" block onClick={onClose}>Cancel</Button>
       <Button block loading={busy} onClick={() => onSave(maxOrders)}>Save Slot</Button></div>
   </div></Modal>;
 }

@@ -17,6 +17,7 @@ export interface MenuItem {
 
 export type OrderStatus = "PENDING" | "CONFIRMED" | "PREPARING" | "READY" | "COMPLETED" | "CANCELLED";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
+export type PickupStatus = "NOT_PICKED_UP" | "PICKED_UP";
 
 export interface OrderLine {
   itemId: string;
@@ -36,7 +37,24 @@ export interface Order {
   pickupDate: string;
   pickupSlot: string;
   placedAt: string;
+  pickupCode?: string;
+  pickupStatus?: PickupStatus;
+  pickedUpAt?: string | null;
   reviewed?: boolean;
+}
+
+export function isOrderActive(order: Pick<Order, "status" | "pickupStatus">): boolean {
+  return order.pickupStatus !== "PICKED_UP"
+    && ["PENDING", "CONFIRMED", "PREPARING", "READY"].includes(order.status);
+}
+
+export function formatPickupTime(value?: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString("en-IN", {
+    day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit",
+  });
 }
 
 export interface Review {

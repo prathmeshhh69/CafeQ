@@ -146,7 +146,7 @@ export function MenuPage({ openItem }: { openItem: MenuItem | null | undefined }
         {!searching && (
           <section className="mt-10">
             <div className="flex items-end justify-between">
-              <div><p className="text-xs font-bold uppercase tracking-[0.19em] text-[#98512e]">Made for today</p><h2 className="mt-1 font-hand text-4xl text-[#211912]">Daily Features</h2></div>
+              <div><p className="text-xs font-bold uppercase tracking-[0.19em] text-[#98512e]">Made for today</p><h2 className="mt-1 font-hand text-3xl sm:text-4xl text-[#211912]">Daily Features</h2></div>
               <span className="hidden text-sm text-muted sm:block">Fresh from the menu ✦</span>
             </div>
             {loading ? (
@@ -192,14 +192,14 @@ export function MenuPage({ openItem }: { openItem: MenuItem | null | undefined }
                 {paged.map((m) => <FoodCard key={m.id} item={m} onOpen={setDetail} />)}
               </div>
               {pageCount > 1 && (
-                <div className="mt-8 flex items-center justify-center gap-2">
-                  <button disabled={safePage === 1} onClick={() => setPage((p) => p - 1)} className="grid h-9 w-9 place-items-center rounded-lg border border-line bg-surface disabled:opacity-40 hover:enabled:bg-cream">
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+                  <button aria-label="Previous menu page" disabled={safePage === 1} onClick={() => setPage((p) => p - 1)} className="grid h-9 w-9 place-items-center rounded-lg border border-line bg-surface disabled:opacity-40 hover:enabled:bg-cream">
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   {Array.from({ length: pageCount }).map((_, i) => (
                     <button key={i} onClick={() => setPage(i + 1)} className={`h-9 w-9 rounded-lg border text-sm font-semibold ${safePage === i + 1 ? "border-lime-deep bg-lime" : "border-line bg-surface hover:bg-cream"}`}>{i + 1}</button>
                   ))}
-                  <button disabled={safePage === pageCount} onClick={() => setPage((p) => p + 1)} className="grid h-9 w-9 place-items-center rounded-lg border border-line bg-surface disabled:opacity-40 hover:enabled:bg-cream">
+                  <button aria-label="Next menu page" disabled={safePage === pageCount} onClick={() => setPage((p) => p + 1)} className="grid h-9 w-9 place-items-center rounded-lg border border-line bg-surface disabled:opacity-40 hover:enabled:bg-cream">
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
@@ -237,19 +237,16 @@ function ProductDetail({ item, onClose }: { item: MenuItem; onClose: () => void 
     return () => controller.abort();
   }, [item.id, user?.id, retry]);
   return (
-    <Modal open onClose={onClose} className="max-w-4xl">
+    <Modal open onClose={onClose} closeLabel="Close item details" className="max-w-4xl">
       <div className="relative">
-        <button onClick={onClose} className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-cream/90 text-ink backdrop-blur hover:bg-cream" aria-label="Close">
-          <X className="h-5 w-5" />
-        </button>
         <div className="grid md:grid-cols-2">
-          <div className="relative aspect-square bg-cream md:aspect-auto">
+          <div className="relative aspect-[4/3] bg-cream md:aspect-auto">
             <ImageWithFallback src={item.image} alt={item.name} category={item.category} className={`h-full w-full object-cover ${!item.available ? "saturate-0 opacity-70" : ""}`} />
             {item.popular && <span className="absolute left-4 top-4 rounded-full bg-lime px-3 py-1 text-xs font-bold shadow">★ Popular pick</span>}
           </div>
-          <div className="flex flex-col p-6 sm:p-8">
+          <div className="flex min-w-0 flex-col p-5 sm:p-8">
             <span className="text-xs font-semibold uppercase tracking-wide text-orange">{item.category}</span>
-            <h2 className="mt-1 font-hand text-4xl">{item.name}</h2>
+            <h2 className="mt-1 font-hand text-3xl sm:text-4xl">{item.name}</h2>
             {(rating?.count || item.reviewCount) ? <div className="mt-2 flex items-center gap-2 text-sm text-muted">
               <Stars rating={rating?.average ?? item.rating ?? 0} /><span className="font-semibold text-ink">{rating?.average ?? item.rating}</span>
               <span>· {rating?.count ?? item.reviewCount} reviews</span>
@@ -261,7 +258,7 @@ function ProductDetail({ item, onClose }: { item: MenuItem; onClose: () => void 
               {item.available ? (
                 <>
                   <QuantityStepper qty={qty} onDec={() => setLocalQty((q) => Math.max(1, q - 1))} onInc={() => setLocalQty((q) => q + 1)} />
-                  <Button size="lg" className="flex-1" disabled={cartBusy} onClick={async () => {
+                  <Button size="lg" className="w-full sm:w-auto sm:flex-1" disabled={cartBusy} onClick={async () => {
                     if (await add(item, qty)) onClose();
                   }}>
                     <Plus className="h-5 w-5" /> Add to Cart · {money(item.price * qty)}

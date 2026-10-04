@@ -36,7 +36,7 @@ export function FoodCard({ item, onOpen }: { item: MenuItem; onOpen: (i: MenuIte
           <span className="font-medium text-ink">{item.rating}</span>
           <span>· {item.reviewCount ?? 0} reviews</span>
         </div>}
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <span className="text-lg font-bold">{money(item.price)}</span>
           {unavailable ? (
             <Button size="sm" disabled variant="secondary">Add</Button>
@@ -74,22 +74,22 @@ export function FoodCardSkeleton() {
 export function CartItem({ item, qty }: { item: MenuItem; qty: number }) {
   const { setQty, remove, cartBusy } = useStore();
   return (
-    <div className="flex gap-4 py-4">
-      <ImageWithFallback src={item.image} alt={item.name} category={item.category} className="h-20 w-20 flex-none rounded-2xl border border-line object-cover" />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-start justify-between gap-3">
+    <div className="grid grid-cols-[64px_minmax(0,1fr)] gap-3 py-4 sm:grid-cols-[80px_minmax(0,1fr)] sm:gap-x-4">
+      <ImageWithFallback src={item.image} alt={item.name} category={item.category} className="h-16 w-16 rounded-2xl border border-line object-cover sm:h-20 sm:w-20" />
+      <div className="min-w-0">
+        <div className="flex flex-col items-start justify-between gap-1 sm:flex-row sm:gap-3">
           <div className="min-w-0">
-            <h4 className="truncate font-semibold">{item.name}</h4>
+            <h4 className="break-words font-semibold">{item.name}</h4>
             <p className="text-sm text-muted">{money(item.price)} each</p>
           </div>
-          <span className="font-bold tabular-nums">{money(item.price * qty)}</span>
+          <span className="shrink-0 font-bold tabular-nums">{money(item.price * qty)}</span>
         </div>
-        <div className="mt-auto flex items-center justify-between pt-3">
-          <QuantityStepper qty={qty} size="sm" disabled={cartBusy} onDec={() => setQty(item.id, qty - 1)} onInc={() => setQty(item.id, qty + 1)} />
-          <button disabled={cartBusy} onClick={() => remove(item.id)} className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-red disabled:opacity-50">
-            <Trash2 className="h-4 w-4" /> Remove
-          </button>
-        </div>
+      </div>
+      <div className="col-span-2 flex flex-wrap items-center justify-between gap-3 sm:col-start-2 sm:col-span-1">
+        <QuantityStepper qty={qty} size="sm" disabled={cartBusy} onDec={() => setQty(item.id, qty - 1)} onInc={() => setQty(item.id, qty + 1)} />
+        <button disabled={cartBusy} onClick={() => remove(item.id)} aria-label={`Remove ${item.name}`} className="inline-flex items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-muted hover:text-red disabled:opacity-50">
+          <Trash2 className="h-4 w-4" /> Remove
+        </button>
       </div>
     </div>
   );
@@ -119,11 +119,11 @@ export function RecommendationCard({ item }: { item: MenuItem }) {
 
 // ---------- OrderCard ----------
 export function OrderCard({ order, onView }: { order: Order; onView: (id: string) => void }) {
-  const status = {
+  const status = order.pickupStatus === "PICKED_UP" ? { label: "Picked up", style: "border-[#b6c9ab] bg-[#edf2e8] text-[#52634b]" } : {
     PENDING: { label: "Pending", style: "border-[#d9b789] bg-[#f7e9d2] text-[#78502f]" },
     CONFIRMED: { label: "Confirmed", style: "border-[#c8bca9] bg-[#f0ebe2] text-[#4e4337]" },
     PREPARING: { label: "Preparing", style: "border-[#e5b083] bg-[#fae6d4] text-[#9a461f]" },
-    READY: { label: "Ready for pickup", style: "border-[#a9c49e] bg-[#e9f1e3] text-[#42633b]" },
+    READY: { label: order.pickupStatus === "NOT_PICKED_UP" ? "Ready for pickup" : "Ready", style: "border-[#a9c49e] bg-[#e9f1e3] text-[#42633b]" },
     COMPLETED: { label: "Completed", style: "border-[#b6c9ab] bg-[#edf2e8] text-[#52634b]" },
     CANCELLED: { label: "Cancelled", style: "border-[#ddb9b1] bg-[#f7e9e6] text-[#98594c]" },
   }[order.status];
@@ -137,13 +137,14 @@ export function OrderCard({ order, onView }: { order: Order; onView: (id: string
         <span className="max-w-[45%] truncate pt-1 font-mono text-xs text-[#82715b]">#{order.id.slice(-8)}</span>
       </div>
       <div className="mx-5 border-t border-dashed border-[#d9c7a9] sm:mx-6" />
+      {order.pickupCode && <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-3 text-xs sm:px-6"><span className="font-medium text-[#796a56]">Pickup code</span><span className="select-all break-all font-mono text-lg font-bold tracking-wider text-[#35291e]">{order.pickupCode}</span></div>}
       <div className="px-5 py-4 sm:px-6">
         <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-[#907451]">{order.lines.reduce((sum, line) => sum + line.qty, 0)} items</p>
         <div className="space-y-2.5">
           {order.lines.slice(0, 3).map((line, index) => (
             <div key={line.itemId} className="flex min-w-0 items-center gap-3">
               {line.image ? <ImageWithFallback src={line.image} alt="" className="h-10 w-10 flex-none rounded-xl border border-[#e1d3ba] object-cover" /> : <span className="grid h-10 w-10 flex-none place-items-center rounded-xl border border-[#e1d3ba] bg-[#f5ead6] text-[#86603e]">{index % 2 ? <CupDoodle className="text-xl" /> : <PlateDoodle className="text-2xl" />}</span>}
-              <p className="min-w-0 flex-1 truncate text-sm font-medium text-[#35291e]">{line.name}</p>
+              <p className="min-w-0 flex-1 break-words text-sm font-medium text-[#35291e]">{line.name}</p>
               <span className="flex-none text-sm tabular-nums text-[#796a56]">&times;{line.qty}</span>
             </div>
           ))}

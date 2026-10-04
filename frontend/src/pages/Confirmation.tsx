@@ -1,6 +1,7 @@
 import { Button, Card, PaymentBadge } from "../components/ui";
 import { CupDoodle, Star, Sparkle, Heart } from "../components/Doodles";
 import { money, upcomingDates, type Order } from "../lib/data";
+import PickupPass from "../components/PickupPass";
 
 export function ConfirmationPage({ order, go }: { order: Order; go: (r: string, id?: string) => void }) {
   const dateLabel = upcomingDates().find((d) => d.iso === order.pickupDate)?.label ?? order.pickupDate;
@@ -29,6 +30,8 @@ export function ConfirmationPage({ order, go }: { order: Order; go: (r: string, 
           <div className="mt-1"><PaymentBadge status={order.payment} /></div>
         </div>
       </Card>
+
+      <div className="mt-5 text-left"><PickupPass order={order} /></div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <Button size="lg" block onClick={() => go("order", order.id)}>Track Order</Button>

@@ -135,7 +135,7 @@ export function Chatbot() {
           ref={launcherRef}
           type="button"
           onClick={() => setOpen(true)}
-          className="group fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-50 flex items-center gap-2 rounded-full border-2 border-[#7d351d] bg-[#b94b20] p-2.5 text-[#fff8eb] shadow-[0_7px_0_#6d2d19,0_14px_28px_rgba(50,28,15,0.28)] transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b94b20] focus-visible:ring-offset-4 motion-reduce:transform-none md:bottom-6 md:right-6 md:px-4 md:py-3"
+          className="group fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-[45] flex items-center gap-2 rounded-full border-2 border-[#7d351d] bg-[#b94b20] p-2.5 text-[#fff8eb] shadow-[0_7px_0_#6d2d19,0_14px_28px_rgba(50,28,15,0.28)] transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b94b20] focus-visible:ring-offset-4 motion-reduce:transform-none md:bottom-6 md:right-6 md:px-4 md:py-3"
           aria-label="Open CafeQ food assistant"
           aria-haspopup="dialog"
         >
@@ -152,7 +152,7 @@ export function Chatbot() {
           role="dialog"
           aria-modal="false"
           aria-labelledby="cafeq-assistant-title"
-          className="fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 flex max-h-[calc(100dvh-6.5rem)] flex-col overflow-hidden rounded-[1.75rem] border border-[#9a7048] bg-[#fffaf2] shadow-[0_24px_70px_rgba(36,20,12,0.35)] md:inset-x-auto md:bottom-6 md:right-6 md:h-[min(560px,calc(100dvh-6rem))] md:max-h-none md:w-[410px]"
+          className="fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[45] flex h-[min(560px,calc(100dvh-6.5rem))] max-h-[calc(100dvh-6.5rem)] flex-col overflow-hidden rounded-[1.75rem] border border-[#9a7048] bg-[#fffaf2] shadow-[0_24px_70px_rgba(36,20,12,0.35)] md:inset-x-auto md:bottom-6 md:right-6 md:h-[min(560px,calc(100dvh-6rem))] md:max-h-none md:w-[410px]"
         >
           <header className="relative flex flex-none items-center gap-3 overflow-hidden border-b border-[#8c6744] bg-[#17120f] px-4 py-3.5 text-[#fff4df]">
             <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full border border-[#c6a875]/25" />
@@ -256,7 +256,7 @@ export function Chatbot() {
                 maxLength={500}
                 rows={1}
                 placeholder="Ask about the menu…"
-                className="max-h-24 min-h-10 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-[#33251c] outline-none placeholder:text-[#937a64]"
+                className="max-h-24 min-h-10 min-w-0 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-[#33251c] outline-none placeholder:text-[#937a64]"
                 aria-label="Message CafeQ food assistant"
               />
               <button

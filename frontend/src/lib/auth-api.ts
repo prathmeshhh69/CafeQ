@@ -7,6 +7,7 @@ export interface AuthUser {
   phone: string;
   role: "CUSTOMER" | "ADMIN";
   isVerified?: boolean;
+  customerCode?: string;
 }
 
 interface AuthResponse { message: string; user: AuthUser; }

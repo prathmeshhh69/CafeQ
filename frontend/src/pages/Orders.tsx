@@ -5,20 +5,20 @@ import { Button, Card, EmptyState, StatusBadge, PaymentBadge, ConfirmationModal,
 import { OrderCard, OrderTimeline, ReviewCard } from "../components/cards";
 import { ImageWithFallback } from "../lib/ImageWithFallback";
 import { PotDoodle, CupDoodle, PlateDoodle, Sparkle, CoffeeBeanDoodle } from "../components/Doodles";
-import { money, type Order, type OrderStatus, type Review } from "../lib/data";
+import { formatPickupTime, isOrderActive, money, type Order, type Review } from "../lib/data";
+import CopyCode from "../components/CopyCode";
+import PickupPass from "../components/PickupPass";
 import { useStore } from "../lib/store";
 import { asReview, reviewsApi } from "../lib/reviews-api";
 import { paymentApi } from "../lib/payment-api";
 import { ordersApi } from "../lib/orders-api";
 
-const ACTIVE: OrderStatus[] = ["PENDING", "CONFIRMED", "PREPARING", "READY"];
-
 export function OrdersPage({ go }: { go: (r: string, id?: string) => void }) {
   const { orders, ordersLoading, ordersError, reloadOrders } = useStore();
   const [tab, setTab] = useState<"active" | "past">("active");
   const reduceMotion = useReducedMotion();
-  const list = orders.filter((order) => tab === "active" ? ACTIVE.includes(order.status) : !ACTIVE.includes(order.status));
-  const activeCount = orders.filter((order) => ACTIVE.includes(order.status)).length;
+  const list = orders.filter((order) => tab === "active" ? isOrderActive(order) : !isOrderActive(order));
+  const activeCount = orders.filter(isOrderActive).length;
   const pastCount = orders.length - activeCount;
   const paidTotal = orders.filter((order) => order.payment === "PAID").reduce((sum, order) => sum + order.total, 0);
   return (
@@ -66,6 +66,7 @@ export function OrderDetailPage({ id, go }: { id: string; go: (r: string, id?: s
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -76,6 +77,21 @@ export function OrderDetailPage({ id, go }: { id: string; go: (r: string, id?: s
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [id, loadOrder]);
+
+  useEffect(() => {
+    if (!order || !isOrderActive(order)) return;
+    let busy = false;
+    let disposed = false;
+    const refresh = async () => {
+      if (busy || disposed || document.visibilityState === "hidden") return;
+      busy = true;
+      try { await loadOrder(id); } catch { /* Keep the last successful order on a background refresh failure. */ }
+      finally { busy = false; }
+    };
+    const timer = window.setInterval(() => { void refresh(); }, 15000);
+    window.addEventListener("focus", refresh);
+    return () => { disposed = true; window.clearInterval(timer); window.removeEventListener("focus", refresh); };
+  }, [id, loadOrder, order?.status, order?.pickupStatus]);
 
   if (loading) return <div className="mx-auto max-w-lg px-4 py-16 text-center text-muted">Loading order…</div>;
 
@@ -134,7 +150,7 @@ export function OrderDetailPage({ id, go }: { id: string; go: (r: string, id?: s
           <h1 title={`Order #${order.id}`} className="break-words text-2xl font-semibold tracking-tight text-[#261d16] sm:text-3xl">Order <span className="font-mono text-[0.82em]">#{shortOrderId}</span></h1>
           <p className="mt-2 flex items-center gap-2 text-sm text-[#76634d]"><Clock3 className="h-4 w-4 text-[#a56436]" />Placed {order.placedAt}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto"><StatusBadge status={order.status} /><PaymentBadge status={order.payment} /></div>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">{order.pickupStatus === "PICKED_UP" ? <span className="rounded-full border border-line bg-cream px-3 py-1 text-xs font-semibold text-ink">Picked Up</span> : <StatusBadge status={order.status} />}<PaymentBadge status={order.payment} /></div>
       </header>
 
       {/* Stateful hero */}
@@ -144,7 +160,7 @@ export function OrderDetailPage({ id, go }: { id: string; go: (r: string, id?: s
           <div><h2 className="font-hand text-3xl text-[#392619]">Cooking with love!</h2><p className="text-[#765a40]">Your food is being prepared.</p></div>
         </Card>
       )}
-      {order.status === "READY" && (
+      {order.status === "READY" && order.pickupStatus === "NOT_PICKED_UP" && (
         <Card className="mt-6 flex items-center gap-4 border-[#c6d0ad] bg-[#edf1e2] p-5">
           <span className="grid h-16 w-16 flex-none place-items-center rounded-full bg-[#dce6c8] text-[#51643b]"><PartyPopper className="h-8 w-8" /></span>
           <div><h2 className="font-hand text-3xl text-[#354128]">Your order is ready! 🎉</h2><p className="text-[#617052]">You can head over and pick it up.</p></div>
@@ -153,7 +169,7 @@ export function OrderDetailPage({ id, go }: { id: string; go: (r: string, id?: s
 
       <Card className="mt-6 overflow-hidden border-[#e2cfb3] bg-[#fffaf2] p-5 sm:p-6">
         <div className="mb-6 flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.17em] text-[#a45a30]">Made with care</p><h2 className="mt-1 font-hand text-2xl text-[#2c2118]">Order journey</h2></div><CoffeeBeanDoodle className="w-9 text-[#b28a5d]" /></div>
-        <OrderTimeline status={order.status} />
+        {order.pickupStatus === "PICKED_UP" ? <p className="text-sm text-muted">Your order has been picked up.{formatPickupTime(order.pickedUpAt) && ` Collected on ${formatPickupTime(order.pickedUpAt)}.`}</p> : <OrderTimeline status={order.status} />}
       </Card>
 
       <div className="mt-6 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -163,7 +179,7 @@ export function OrderDetailPage({ id, go }: { id: string; go: (r: string, id?: s
             {order.lines.map((l) => (
               <div key={l.itemId} className="flex min-w-0 items-center gap-3 border-b border-dashed border-[#e4d5bd] py-4 sm:gap-4">
                 <ImageWithFallback src={l.image} alt={l.name} className="h-14 w-14 flex-none rounded-2xl border border-[#e5d5bd] bg-[#f3e7d5] object-cover sm:h-16 sm:w-16" />
-                <div className="min-w-0 flex-1"><p className="truncate font-semibold text-[#35271b]">{l.name}</p><p className="mt-1 text-sm text-[#806b53]">{money(l.price)} <span className="px-1 text-[#b48659]">×</span> {l.qty}</p></div>
+                <div className="min-w-0 flex-1"><p className="break-words font-semibold text-[#35271b]">{l.name}</p><p className="mt-1 text-sm text-[#806b53]">{money(l.price)} <span className="px-1 text-[#b48659]">×</span> {l.qty}</p></div>
                 <span className="flex-none text-sm font-bold tabular-nums text-[#392719] sm:text-base">{money(l.price * l.qty)}</span>
               </div>
             ))}
@@ -172,11 +188,19 @@ export function OrderDetailPage({ id, go }: { id: string; go: (r: string, id?: s
         </Card>
 
         <div className="space-y-4">
+          <PickupPass order={order} />
+          <Button variant="secondary" block loading={refreshing} onClick={async () => {
+            if (refreshing) return;
+            setRefreshing(true);
+            try { await loadOrder(id); }
+            catch (reason) { toast(reason instanceof Error ? reason.message : "Could not refresh this order.", "error"); }
+            finally { setRefreshing(false); }
+          }}>Refresh Status</Button>
           <Card className="overflow-hidden border-[#d9c5a5] bg-[#f5ead8]">
             <div className="flex items-center gap-3 border-b border-[#dfc9a9] px-5 py-4"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#ead7b8] text-[#8e4b29]"><MapPin className="h-5 w-5" /></span><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#98633b]">When it’s ready</p><h2 className="font-hand text-2xl text-[#302217]">Pickup</h2></div><CupDoodle className="ml-auto text-3xl text-[#976b43]" /></div>
             <div className="p-5"><p className="text-xs font-semibold uppercase tracking-[0.13em] text-[#866746]">Pickup window</p><p className="mt-1 text-xl font-bold tracking-tight text-[#332317]">{order.pickupSlot}</p>
               <dl className="mt-4 space-y-3 border-t border-dashed border-[#d5bd9a] pt-4 text-sm">
-                <Row label="Status" value={<StatusBadge status={order.status} />} />
+                <Row label="Status" value={order.pickupStatus === "PICKED_UP" ? "Picked Up" : <StatusBadge status={order.status} />} />
                 <Row label="Payment" value={<PaymentBadge status={order.payment} />} />
               </dl>
             </div>
@@ -286,9 +310,10 @@ function ReviewSection({ order }: { order: Order }) {
           const d = drafts[l.itemId] ?? { rating: 0, comment: "" };
           return (
             <div key={l.itemId} className="rounded-2xl border border-[#e2cfb3] bg-[#fbf4e8] p-4 transition-shadow hover:shadow-[0_8px_22px_-18px_rgba(70,45,23,0.55)]">
-              <div className="flex items-center gap-3">
-                <ImageWithFallback src={l.image} alt={l.name} className="h-12 w-12 rounded-xl object-cover" />
-                <div className="min-w-0 flex-1"><p className="truncate font-semibold text-[#35271b]">{l.name}</p><p className="mb-1 text-xs text-[#806b53]">Tap a star to leave your rating</p><RatingInput value={d.rating} onChange={(n) => set(l.itemId, { rating: n })} size={22} /></div>
+              <div className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-x-3 gap-y-2">
+                <ImageWithFallback src={l.image} alt={l.name} className="h-12 w-12 rounded-xl object-cover sm:row-span-2" />
+                <div className="min-w-0"><p className="break-words font-semibold text-[#35271b]">{l.name}</p><p className="mb-1 text-xs text-[#806b53]">Tap a star to leave your rating</p></div>
+                <div className="col-span-2 sm:col-span-1"><RatingInput value={d.rating} onChange={(n) => set(l.itemId, { rating: n })} size={22} /></div>
               </div>
               <textarea value={d.comment} onChange={(e) => set(l.itemId, { comment: e.target.value })}
                 placeholder="Add a comment (optional)…" rows={2}
@@ -308,7 +333,7 @@ function ReviewSection({ order }: { order: Order }) {
 export function AccountPage({ go }: { go: (r: string) => void }) {
   const { user, logout, orders, toast } = useStore();
   if (!user) return null;
-  const active = orders.filter((o) => ACTIVE.includes(o.status)).length;
+  const active = orders.filter(isOrderActive).length;
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
       <h1 className="font-hand text-4xl">Account</h1>
@@ -332,6 +357,14 @@ export function AccountPage({ go }: { go: (r: string) => void }) {
         </dl>
       </Card>
 
+      {user.role === "CUSTOMER" && (
+        <Card className="mt-5 border-line bg-surface p-5 sm:p-6">
+          <h2 className="mb-3 font-hand text-2xl">Customer Code</h2>
+          {user.customerCode ? <CopyCode code={user.customerCode} label="Customer code" /> : <p className="text-sm text-muted">Your account does not have a customer code yet.</p>}
+          <p className="mt-3 text-sm text-muted">Your permanent CafeQ customer identifier. Each order has its own separate pickup code.</p>
+        </Card>
+      )}
+
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <Button variant="secondary" block onClick={() => go("orders")}>My Orders {active > 0 && <span className="rounded-full bg-lime px-2 py-0.5 text-xs font-bold">{active} active</span>}</Button>
         <Button variant="secondary" block onClick={async () => {
@@ -346,8 +379,8 @@ export function AccountPage({ go }: { go: (r: string) => void }) {
 function Detail({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3 px-6 py-4">
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-cream text-muted">{icon}</span>
-      <div><dt className="text-xs font-medium text-muted">{label}</dt><dd className="font-medium">{value}</dd></div>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cream text-muted">{icon}</span>
+      <div className="min-w-0 flex-1"><dt className="text-xs font-medium text-muted">{label}</dt><dd className="break-words font-medium">{value}</dd></div>
     </div>
   );
 }

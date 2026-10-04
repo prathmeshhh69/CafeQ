@@ -47,9 +47,9 @@ export function CartPage({ go }: { go: (r: string) => void }) {
       <h1 className="font-hand text-4xl">Your Cart</h1>
       <p className="mt-1 text-muted">{cart.reduce((s, l) => s + l.qty, 0)} items ready for pickup.</p>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div>
-          <Card className="divide-y divide-line px-5">
+      <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0">
+          <Card className="divide-y divide-line px-4 sm:px-5">
             {cart.map((l) => <CartItem key={l.item.id} item={l.item} qty={l.qty} />)}
           </Card>
 

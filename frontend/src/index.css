@@ -63,6 +63,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
 }
 
 body {
@@ -71,6 +72,29 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/* Allow real content to wrap rather than hiding page overflow. */
+#root { min-width: 0; }
+:where(h1, h2, h3, h4, p, dd, td) { overflow-wrap: anywhere; }
+img { max-width: 100%; }
+
+@media (width < 768px), (pointer: coarse) {
+  button { min-height: 44px; min-width: 44px; touch-action: manipulation; }
+  input:not([type="checkbox"]):not([type="radio"]), textarea, select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .quantity-stepper { height: 44px; }
+  .quantity-stepper > button { width: 44px; }
+}
+
+.cafeq-dialog { padding-bottom: env(safe-area-inset-bottom); }
+.customer-shell { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+@media (width < 768px) {
+  /* Keep the latest feedback readable without filling a short phone viewport. */
+  .cafeq-toast:not(:last-child) { display: none; }
+}
+@media (width >= 768px) { .customer-shell { padding-bottom: 0; } }
 
 .font-hand {
   font-family: var(--font-hand);

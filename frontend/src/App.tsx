@@ -71,7 +71,7 @@ function Shell() {
   if (allowedRoute === "admin" && user?.role === "ADMIN") return <><AdminApp exit={() => go("menu")} /><Toaster /></>;
 
   return (
-    <div className="min-h-screen pb-20 md:pb-0">
+    <div className="customer-shell min-h-dvh">
       <Navbar route={allowedRoute} go={go} onSearch={() => go("menu")} />
       {allowedRoute === "menu" || allowedRoute === "home" ? <MenuPage openItem={null} /> : null}
       {allowedRoute === "cart" && <CartPage go={go} />}

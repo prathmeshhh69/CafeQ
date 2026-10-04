@@ -35,7 +35,7 @@ function PasswordInput({ label, ...props }: React.InputHTMLAttributes<HTMLInputE
         <input
           {...props}
           type={show ? "text" : "password"}
-          className="auth-input w-full rounded-xl border border-line bg-surface px-4 py-3 pl-10 pr-11 text-sm text-ink placeholder:text-muted/70"
+          className="auth-input w-full rounded-xl border border-line bg-surface px-4 py-3 pl-10 pr-14 text-base text-ink placeholder:text-muted/70 sm:text-sm"
         />
         <button
           type="button"
@@ -97,7 +97,7 @@ function BrandPanel({ headline, reduceMotion }: { headline: string; reduceMotion
 function AuthFrame({ headline, mode, children }: { headline: string; mode: "login" | "register"; children: React.ReactNode }) {
   const reduceMotion = useReducedMotion();
   return (
-    <div className="min-h-screen bg-cream lg:grid lg:grid-cols-[minmax(360px,0.88fr)_1.12fr]">
+    <div className="min-h-dvh bg-cream lg:grid lg:grid-cols-[minmax(360px,0.88fr)_1.12fr]">
       <motion.section
         initial={reduceMotion ? false : { opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -122,7 +122,7 @@ function AuthFrame({ headline, mode, children }: { headline: string; mode: "logi
         className="relative flex min-w-0 items-center justify-center overflow-hidden px-5 py-8 sm:px-10 sm:py-12 lg:min-h-screen lg:px-12"
       >
         <div aria-hidden="true" className="pointer-events-none absolute -right-32 top-12 h-72 w-72 rounded-full bg-orange/10 blur-3xl" />
-        <div className="relative z-10 w-full max-w-[460px]">
+        <div className="relative z-10 min-w-0 w-full max-w-[460px]">
           <motion.div
             key={mode}
             variants={formSequenceVariants}
@@ -220,7 +220,7 @@ export function LoginPage({ go }: { go: (r: string) => void }) {
           <p className="mt-3 text-sm leading-6 text-muted sm:text-base">Enter the 6-digit code sent to <span className="font-semibold text-ink">{verificationEmail}</span> to continue to CafeQ.</p>
         </motion.div>
         <form onSubmit={submitOtp} className="space-y-5">
-          <motion.div variants={formItemVariants}><Input name="otp" label="6-digit verification code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="123456" required className="auth-input !py-3" /></motion.div>
+          <motion.div variants={formItemVariants}><Input key="verification-otp" name="otp" label="6-digit verification code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="123456" required className="auth-input !py-3" /></motion.div>
           {errorMessage && <motion.p variants={formItemVariants} role="alert" className="text-sm text-red">{errorMessage}</motion.p>}
           <motion.div variants={formItemVariants} whileHover={loading ? undefined : { y: -2 }} whileTap={loading ? undefined : { scale: 0.99 }}><Button type="submit" size="lg" block loading={loading} disabled={otp.length !== 6} className="auth-primary !py-3.5">Verify account <ArrowRight className="h-4 w-4" /></Button></motion.div>
         </form>
@@ -304,7 +304,7 @@ export function RegisterPage({ go }: { go: (r: string) => void }) {
           <p className="mt-3 text-sm leading-6 text-muted sm:text-base">We sent a 6-digit code to <span className="font-semibold text-ink">{verificationEmail}</span>. Enter it below to finish creating your account.</p>
         </motion.div>
         <form onSubmit={submitOtp} className="space-y-5">
-          <motion.div variants={formItemVariants}><Input name="otp" label="6-digit verification code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="123456" required className="auth-input !py-3" /></motion.div>
+          <motion.div variants={formItemVariants}><Input key="verification-otp" name="otp" label="6-digit verification code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="123456" required className="auth-input !py-3" /></motion.div>
           {errorMessage && <motion.p variants={formItemVariants} role="alert" className="text-sm text-red">{errorMessage}</motion.p>}
           <motion.div variants={formItemVariants} whileHover={loading ? undefined : { y: -2 }} whileTap={loading ? undefined : { scale: 0.99 }}><Button type="submit" size="lg" block loading={loading} disabled={otp.length !== 6} className="auth-primary !py-3.5">Verify email <ArrowRight className="h-4 w-4" /></Button></motion.div>
         </form>
