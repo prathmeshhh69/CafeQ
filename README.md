@@ -6,6 +6,10 @@ For local development, install each project's dependencies and start the backend
 
 Copy `backend/.env.example` to `backend/.env` and `frontend/.env.example` to `frontend/.env`. `VITE_API_BASE_URL` defaults to `http://localhost:5000`; set `VITE_RAZORPAY_KEY_ID` to the public key ID that matches the backend Razorpay account before testing payments. Keep the Razorpay secret only in the backend. For a frontend served from a different origin, set backend `FRONTEND_ORIGIN` to that exact origin; localhost ports 5173 and 8443 are accepted by default.
 
+## Deploy the frontend to Vercel
+
+In Vercel, import this repository and set the project root directory to `frontend`. Vercel will use the included `frontend/vercel.json` rewrites: `/api/*` is proxied to `https://cafeq-etz2.onrender.com`, and other paths serve the Vite app for client-side routing. Leave `VITE_API_BASE_URL` unset in Vercel so API calls use the same-origin proxy; this also keeps login cookies on the frontend origin. Set `VITE_GOOGLE_CLIENT_ID` in Vercel if Google sign-in is needed, and add the deployed frontend origin to that OAuth client's authorized JavaScript origins. Local development uses `VITE_API_BASE_URL=http://localhost:5000` from `frontend/.env`.
+
 ## Seed the Lassi Wassi menu
 
 After configuring `backend/.env`, seed or update the Lassi Wassi catalogue and its development inventory records with:

@@ -1,4 +1,7 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
+// Vercel rewrites /api/* to the Render backend, so production can use a
+// same-origin relative URL (important for the auth cookie). Local dev sets
+// VITE_API_BASE_URL=http://localhost:5000 in frontend/.env.
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number, readonly code?: string, readonly email?: string) {
