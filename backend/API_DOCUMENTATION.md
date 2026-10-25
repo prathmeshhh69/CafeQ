@@ -410,6 +410,64 @@ Use the returned email with the existing `POST /api/auth/verify-otp` endpoint. I
 
 ## Orders
 
+### OmniDimension Server-to-Server Order Creation
+
+Direct AI order creation is disabled by default. It requires an explicitly configured `OMNIDIMENSION_DIRECT_ORDERING_ENABLED=true`, a server-only confirmation secret, and a documented secure OmniDimension token handoff. Until those conditions are met, the widget may assist with menu discovery but customers must use the authenticated CafeQ checkout.
+
+**Method and URL:** `POST /api/integrations/omnidimension/orders`
+
+**Authentication:** `Authorization: Bearer <OMNIDIMENSION_INTEGRATION_SECRET>`
+
+**Customer delegation:** `X-OmniDimension-Delegation-Token: <short-lived-token>`
+
+**Request Body:**
+
+```json
+{
+  "customerId": "64c8f...",
+  "timeSlotId": "64e...",
+  "items": [
+    {
+      "menuItemId": "64m...",
+      "quantity": 1
+    }
+  ],
+  "idempotencyKey": "conversation-order-unique-key",
+  "confirmed": true
+}
+```
+
+The endpoint accepts existing `CUSTOMER` account IDs only. `confirmed` must be the literal boolean `true`, representing explicit customer confirmation collected by the conversation. The `customerId` must match the `sub` claim in the short-lived delegation token. The delegation token is issued only to an authenticated CafeQ customer and is scoped to agent `273728`, operation `omnidimension:orders:create`, and a five-minute expiry. It does not authorize payments, customer-record access, admin actions, or arbitrary API access.
+
+The request must also include `X-OmniDimension-Confirmation-Token`. CafeQ issues this short-lived token only through the authenticated customer session at `POST /api/integrations/omnidimension/confirmation-token`; it is bound to the authenticated customer, time slot, and exact item list. The server rejects a missing, expired, mismatched, or forged confirmation token.
+
+The token is obtained with:
+
+**Method and URL:** `POST /api/integrations/omnidimension/delegation-token`
+
+**Authentication:** Existing CafeQ customer authentication through the `token` cookie or bearer JWT.
+
+**Response:**
+
+```json
+{
+  "token": "<short-lived-delegation-jwt>",
+  "expiresAt": "<ISO-8601 timestamp>",
+  "agentId": 273728,
+  "operation": "omnidimension:orders:create"
+}
+```
+
+The browser must obtain this token through the authenticated CafeQ session and pass it to the OmniDimension website session. It must not receive or hold `OMNIDIMENSION_INTEGRATION_SECRET` or `OMNIDIMENSION_DELEGATION_SECRET`. The current frontend API helper exposes this request as `authApi.createOmniDimensionDelegation`; embedding or wiring the OmniDimension widget is a separate step.
+
+Prices, totals, item availability, inventory, slot capacity, order status, payment status, and pickup code are resolved by CafeQ. New orders remain `PENDING` with `paymentStatus` `PENDING`. Reusing an idempotency key returns the previously created order when the request payload matches; reusing it with a different payload is rejected.
+
+Before an integration order transaction begins, CafeQ initializes the `OmniDimensionRequest.idempotencyKey` unique index. If the database contains conflicting existing idempotency records or cannot create the index, the request fails rather than proceeding without duplicate-key protection.
+
+The integration secret is backend-only and must not be placed in frontend or `VITE_*` environment variables.
+
+The confirmation secret is `OMNIDIMENSION_CONFIRMATION_SECRET`. Direct ordering is disabled unless `OMNIDIMENSION_DIRECT_ORDERING_ENABLED=true` is explicitly configured on the backend.
+
 ### Customer
 
 #### Create Order
