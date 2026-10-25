@@ -11,6 +11,12 @@ export interface AuthUser {
 }
 
 interface AuthResponse { message: string; user: AuthUser; }
+export interface OmniDimensionDelegation {
+  token: string;
+  expiresAt: string;
+  agentId: 273728;
+  operation: "omnidimension:orders:create";
+}
 
 export const authApi = {
   register: (details: { name: string; email: string; phone: string; password: string }) =>
@@ -25,4 +31,6 @@ export const authApi = {
     apiRequest<AuthResponse>("/api/auth/google", { method: "POST", body: { credential } }),
   logout: () => apiRequest<{ message: string }>("/api/auth/logout", { method: "POST" }),
   me: () => apiRequest<AuthResponse>("/api/auth/me", { skipUnauthorizedHandler: true }),
+  createOmniDimensionDelegation: () =>
+    apiRequest<OmniDimensionDelegation>("/api/integrations/omnidimension/delegation-token", { method: "POST" }),
 };

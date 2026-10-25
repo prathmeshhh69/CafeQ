@@ -10,10 +10,11 @@ const reviewRoutes=require('./routes/review.routes')
 const recommendationRoutes=require('./routes/recommendation.routes')
 const adminRoutes=require('./routes/admin.routes')
 const aiRoutes=require('./routes/ai.routes')
+const omnidimensionRoutes=require('./routes/omnidimension.routes')
 const cookieParser=require('cookie-parser')
 const cors=require('cors');
 const app=express();
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
 const allowedFrontendOrigins = [
     'http://localhost:5173',
@@ -36,5 +37,6 @@ app.use('/api/reviews', reviewRoutes)
 app.use('/api/recommendations', recommendationRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/ai/food-assistant', aiRoutes)
+app.use('/api/integrations/omnidimension', omnidimensionRoutes)
 
 module.exports=app;

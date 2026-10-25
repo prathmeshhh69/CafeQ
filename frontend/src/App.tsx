@@ -10,6 +10,7 @@ import { ConfirmationPage } from "./pages/Confirmation";
 import { OrdersPage, OrderDetailPage, AccountPage } from "./pages/Orders";
 import { AdminApp } from "./pages/Admin";
 import { Chatbot } from "./components/Chatbot";
+import { OmniDimensionWidget } from "./components/OmniDimensionWidget";
 import type { Order } from "./lib/data";
 
 type Route =
@@ -80,6 +81,7 @@ function Shell() {
       {allowedRoute === "orders" && <OrdersPage go={go} />}
       {allowedRoute === "order" && orderId && <OrderDetailPage id={orderId} go={go} />}
       {allowedRoute === "account" && <AccountPage go={go} />}
+      {allowedRoute === "menu" && <OmniDimensionWidget />}
       <Chatbot />
       <MobileBottomNav route={allowedRoute} go={go} />
       <Toaster />
